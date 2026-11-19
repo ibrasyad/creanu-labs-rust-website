@@ -13,7 +13,7 @@ Follow these exact steps inside **dash.cloudflare.com** to connect GitHub direct
 3. Enter these exact **Build configuration** fields:
    - **Project / Worker name**: `creanu-labs-simulator`
      > **Important:** This name **must** match `"name"` inside `web/wrangler.jsonc`, otherwise `wrangler deploy` will fail with a name mismatch error.
-   - **Root directory** (under Build paths): `web`
+   - **Root directory** (under Build paths): `web` *(uses `web/package-lock.json` for `npm clean-install`)*
    - **Build command**: `npm run build:cf`
    - **Deploy command**: `npx wrangler deploy`
 4. Click **Save and Deploy**.
