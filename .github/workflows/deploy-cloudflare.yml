@@ -1,59 +1,59 @@
-# name: Deploy to Cloudflare Workers
+name: Deploy to Cloudflare Workers
 
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths:
-#       - 'web/**'
-#       - 'engine/**'
-#       - 'config/**'
-#       - '.github/workflows/deploy-cloudflare.yml'
-#   workflow_dispatch:
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+      - 'engine/**'
+      - 'config/**'
+      - '.github/workflows/deploy-cloudflare.yml'
+  workflow_dispatch:
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     name: Test Rust, Build Wasm & Deploy
-#     steps:
-#       - name: Checkout Repository
-#         uses: actions/checkout@v4
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Test Rust, Build Wasm & Deploy
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-#       - name: Setup Rust Toolchain
-#         uses: dtolnay/rust-toolchain@stable
-#         with:
-#           targets: wasm32-unknown-unknown
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
-#       - name: Install wasm-pack
-#         uses: jetli/wasm-pack-action@v0.4.0
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
 
-#       - name: Run Rust Engine Unit Tests
-#         run: cargo test --manifest-path engine/Cargo.toml
+      - name: Run Rust Engine Unit Tests
+        run: cargo test --manifest-path engine/Cargo.toml
 
-#       - name: Compile Rust Engine to WebAssembly
-#         run: wasm-pack build engine --target web --out-dir ../web/src/wasm-pkg --release
+      - name: Compile Rust Engine to WebAssembly
+        run: wasm-pack build engine --target web --out-dir ../web/src/wasm-pkg --release
 
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 20
-#           cache: 'npm'
-#           cache-dependency-path: web/package-lock.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
 
-#       - name: Install Dependencies
-#         working-directory: web
-#         run: npm install
+      - name: Install Dependencies
+        working-directory: web
+        run: npm install
 
-#       - name: Bundle YAML Config & Build Web Application
-#         working-directory: web
-#         run: |
-#           node scripts/bundleConfig.cjs
-#           npm run build
+      - name: Bundle YAML Config & Build Web Application
+        working-directory: web
+        run: |
+          node scripts/bundleConfig.cjs
+          npm run build
 
-#       - name: Deploy to Cloudflare Workers
-#         uses: cloudflare/wrangler-action@v3
-#         with:
-#           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-#           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-#           workingDirectory: 'web'
-#           command: deploy
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'web'
+          command: deploy
