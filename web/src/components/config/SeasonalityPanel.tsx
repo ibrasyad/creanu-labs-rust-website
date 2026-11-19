@@ -147,13 +147,72 @@ export const SeasonalityPanel: React.FC<SeasonalityPanelProps> = ({
                 min="0"
                 max="1"
                 value={globalVisitChance[day] ?? (day === 'saturday' || day === 'sunday' ? 0.075 : 0.05)}
-                onChange={(e) =>
-                  updateField(['simulation', 'visit_chance', day], parseFloat(e.target.value))
-                }
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (!Number.isNaN(v)) updateField(['simulation', 'visit_chance', day], v);
+                }}
                 className={`w-14 text-right rounded px-1.5 py-0.5 font-mono tabular-nums border ${theme.inputClass}`}
               />
             </label>
           ))}
+        </div>
+      </div>
+
+      {/* Fallback Basket & Quantity Defaults */}
+      <div className="p-4 rounded-lg border border-inherit bg-black/5 dark:bg-white/5 space-y-3">
+        <div>
+          <h4 className="font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            Fallback Basket &amp; Quantity Defaults (simulation.yaml)
+          </h4>
+          <p className={`text-[11px] ${theme.mutedClass}`}>
+            Used only when a customer tier does not define its own basket bounds or base quantity λ.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label className="flex items-center justify-between gap-2 p-2.5 rounded border border-inherit/60">
+            <span className={theme.mutedClass}>Min Items / Basket</span>
+            <input
+              type="number"
+              min="1"
+              max="30"
+              value={parsedConfig.simulation?.basket?.min_items ?? 1}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (!Number.isNaN(v)) updateField(['simulation', 'basket', 'min_items'], v);
+              }}
+              className={`w-16 text-right rounded px-1.5 py-0.5 font-mono tabular-nums border ${theme.inputClass}`}
+            />
+          </label>
+          <label className="flex items-center justify-between gap-2 p-2.5 rounded border border-inherit/60">
+            <span className={theme.mutedClass}>Max Items / Basket</span>
+            <input
+              type="number"
+              min="1"
+              max="50"
+              value={parsedConfig.simulation?.basket?.max_items ?? 12}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (!Number.isNaN(v)) updateField(['simulation', 'basket', 'max_items'], v);
+              }}
+              className={`w-16 text-right rounded px-1.5 py-0.5 font-mono tabular-nums border ${theme.inputClass}`}
+            />
+          </label>
+          <label className="flex items-center justify-between gap-2 p-2.5 rounded border border-inherit/60">
+            <span className={theme.mutedClass}>Base Qty / Item (λ)</span>
+            <input
+              type="number"
+              step="0.1"
+              min="0.1"
+              max="10"
+              value={parsedConfig.simulation?.quantity_model?.base_lambda ?? 1.0}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                if (!Number.isNaN(v)) updateField(['simulation', 'quantity_model', 'base_lambda'], v);
+              }}
+              className={`w-16 text-right rounded px-1.5 py-0.5 font-mono tabular-nums border ${theme.inputClass}`}
+            />
+          </label>
         </div>
       </div>
 

@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import * as yaml from 'js-yaml';
 import {
   Calendar,
-  ShoppingBag,
-  GitFork,
   Sliders,
   ChevronDown,
   ChevronUp,
@@ -15,6 +13,8 @@ import {
   Trash2,
   Clock,
   Zap,
+  Activity,
+  Gauge,
 } from 'lucide-react';
 import { ThemeConfig } from '../types/theme';
 import { TiersPanel } from './config/TiersPanel';
@@ -240,60 +240,74 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             </div>
           </div>
 
-          {/* Card 2: Basket & Quantities */}
+          {/* Card 2: Global Behavior Multipliers (Affects All Tiers) */}
           <div className="space-y-3.5">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
-              <ShoppingBag className="w-3.5 h-3.5 opacity-70" />
-              <span>Basket &amp; Quantities</span>
+              <Gauge className="w-3.5 h-3.5 opacity-70" />
+              <span>Global Behavior Multipliers</span>
             </div>
 
-            {/* Min Items */}
-            <div>
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className={theme.mutedClass}>Min Items / Basket</span>
+            {[
+              {
+                key: 'new_user',
+                label: 'New User Acquisition',
+                value: parsedConfig.growth?.base?.overall?.new_user ?? 1.0,
+              },
+              {
+                key: 'visit',
+                label: 'Visit Frequency',
+                value: parsedConfig.growth?.base?.overall?.visit ?? 1.0,
+              },
+              {
+                key: 'conversion',
+                label: 'Funnel Conversion',
+                value: parsedConfig.growth?.base?.overall?.conversion ?? 1.0,
+              },
+            ].map((item) => (
+              <div key={item.key}>
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span className={theme.mutedClass}>{item.label}</span>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.05"
+                      min="0.1"
+                      max="3.0"
+                      value={item.value}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (!Number.isNaN(v)) updateField(['growth', 'base', 'overall', item.key], v);
+                      }}
+                      className={`w-14 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
+                    />
+                    <span className={`text-[11px] font-mono ${theme.mutedClass}`}>x</span>
+                  </div>
+                </div>
                 <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={parsedConfig.simulation?.basket?.min_items ?? 1}
-                  onChange={(e) => updateField(['simulation', 'basket', 'min_items'], Number(e.target.value))}
-                  className={`w-14 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
+                  type="range"
+                  min="0.1"
+                  max="3.0"
+                  step="0.05"
+                  value={item.value}
+                  onChange={(e) => updateField(['growth', 'base', 'overall', item.key], parseFloat(e.target.value))}
+                  className="w-full accent-slate-900 dark:accent-emerald-400 cursor-pointer"
                 />
               </div>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={parsedConfig.simulation?.basket?.min_items ?? 1}
-                onChange={(e) => updateField(['simulation', 'basket', 'min_items'], Number(e.target.value))}
-                className="w-full accent-slate-900 dark:accent-emerald-400 cursor-pointer"
-              />
+            ))}
+
+            <p className={`text-[11px] ${theme.mutedClass}`}>
+              Multiplies all customer tiers on top of tier-level rates (1.0x = baseline).
+            </p>
+          </div>
+
+          {/* Card 3: Global Variance & Retention */}
+          <div className="space-y-3.5">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
+              <Activity className="w-3.5 h-3.5 opacity-70" />
+              <span>Variance &amp; Retention</span>
             </div>
 
-            {/* Max Items */}
-            <div>
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className={theme.mutedClass}>Max Items / Basket</span>
-                <input
-                  type="number"
-                  min="2"
-                  max="30"
-                  value={parsedConfig.simulation?.basket?.max_items ?? 12}
-                  onChange={(e) => updateField(['simulation', 'basket', 'max_items'], Number(e.target.value))}
-                  className={`w-14 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
-                />
-              </div>
-              <input
-                type="range"
-                min="2"
-                max="30"
-                value={parsedConfig.simulation?.basket?.max_items ?? 12}
-                onChange={(e) => updateField(['simulation', 'basket', 'max_items'], Number(e.target.value))}
-                className="w-full accent-slate-900 dark:accent-emerald-400 cursor-pointer"
-              />
-            </div>
-
-            {/* Price Variance */}
+            {/* Price Variation */}
             <div>
               <div className="flex justify-between items-center text-xs mb-1">
                 <span className={theme.mutedClass}>Price Variation (Std Dev)</span>
@@ -303,8 +317,11 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                   min="0"
                   max="0.25"
                   value={parsedConfig.simulation?.price_variation?.std_pct ?? 0.08}
-                  onChange={(e) => updateField(['simulation', 'price_variation', 'std_pct'], parseFloat(e.target.value))}
-                  className={`w-14 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isNaN(v)) updateField(['simulation', 'price_variation', 'std_pct'], v);
+                  }}
+                  className={`w-16 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                 />
               </div>
               <input
@@ -318,76 +335,72 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
               />
             </div>
 
-            {/* Base Quantity Lambda */}
+            {/* Reactivation Probability */}
             <div>
               <div className="flex justify-between items-center text-xs mb-1">
-                <span className={theme.mutedClass}>Base Qty / Item (λ)</span>
+                <span className={theme.mutedClass}>Lapsed Reactivation Chance</span>
                 <input
                   type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="5"
-                  value={parsedConfig.simulation?.quantity_model?.base_lambda ?? 1.0}
-                  onChange={(e) => updateField(['simulation', 'quantity_model', 'base_lambda'], parseFloat(e.target.value))}
-                  className={`w-14 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
+                  step="0.001"
+                  min="0"
+                  max="0.05"
+                  value={parsedConfig.simulation?.reactivation_probability ?? 0.002}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isNaN(v)) updateField(['simulation', 'reactivation_probability'], v);
+                  }}
+                  className={`w-16 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                 />
               </div>
               <input
                 type="range"
-                min="0.1"
-                max="5"
-                step="0.1"
-                value={parsedConfig.simulation?.quantity_model?.base_lambda ?? 1.0}
-                onChange={(e) => updateField(['simulation', 'quantity_model', 'base_lambda'], parseFloat(e.target.value))}
+                min="0"
+                max="0.05"
+                step="0.001"
+                value={parsedConfig.simulation?.reactivation_probability ?? 0.002}
+                onChange={(e) => updateField(['simulation', 'reactivation_probability'], parseFloat(e.target.value))}
                 className="w-full accent-slate-900 dark:accent-emerald-400 cursor-pointer"
               />
             </div>
-          </div>
 
-          {/* Card 3: All 4 Key Funnel Conversion Steps */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
-              <GitFork className="w-3.5 h-3.5 opacity-70" />
-              <span>Key Funnel Rates</span>
+            {/* Monthly Volume Noise Multiplier */}
+            <div>
+              <div className="flex justify-between items-center text-xs mb-1">
+                <span className={theme.mutedClass}>Daily Volume Volatility (Mult)</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  max="2.0"
+                  value={parsedConfig.date?.transaction_volume?.monthly_rate_noise?.multiplier ?? 1.25}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!Number.isNaN(v)) {
+                      updateField(['date', 'transaction_volume', 'monthly_rate_noise', 'multiplier'], v);
+                    }
+                  }}
+                  className={`w-16 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
+                />
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="2.0"
+                step="0.01"
+                value={parsedConfig.date?.transaction_volume?.monthly_rate_noise?.multiplier ?? 1.25}
+                onChange={(e) =>
+                  updateField(
+                    ['date', 'transaction_volume', 'monthly_rate_noise', 'multiplier'],
+                    parseFloat(e.target.value)
+                  )
+                }
+                className="w-full accent-slate-900 dark:accent-emerald-400 cursor-pointer"
+              />
             </div>
 
-            {[
-              { key: 'landing_page', label: 'Landing \u2192 Product View', fallback: 0.15 },
-              { key: 'product_view', label: 'Product View \u2192 Add to Cart', fallback: 0.25 },
-              { key: 'add_to_cart', label: 'Cart \u2192 Checkout', fallback: 0.4 },
-              { key: 'checkout', label: 'Checkout \u2192 Paid', fallback: 0.5 },
-            ].map((step) => {
-              const rate = parsedConfig.funnel?.[step.key]?.conversion_rate ?? step.fallback;
-              return (
-                <div key={step.key}>
-                  <div className="flex justify-between items-center text-xs mb-1">
-                    <span className={theme.mutedClass}>{step.label}</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max="1.0"
-                      value={rate}
-                      onChange={(e) =>
-                        updateField(['funnel', step.key, 'conversion_rate'], parseFloat(e.target.value))
-                      }
-                      className={`w-14 text-right rounded px-1.5 py-0.5 text-xs font-mono tabular-nums border ${theme.inputClass}`}
-                    />
-                  </div>
-                  <input
-                    type="range"
-                    min="0.01"
-                    max="1.0"
-                    step="0.01"
-                    value={rate}
-                    onChange={(e) =>
-                      updateField(['funnel', step.key, 'conversion_rate'], parseFloat(e.target.value))
-                    }
-                    className="w-full accent-slate-900 dark:accent-emerald-400 cursor-pointer"
-                  />
-                </div>
-              );
-            })}
+            <p className={`text-[11px] ${theme.mutedClass}`}>
+              Global settings with no tier-level overrides.
+            </p>
           </div>
         </div>
 
@@ -426,7 +439,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                   { id: 'tiers', label: `Customer Tiers (${Object.keys(parsedConfig.tiers || {}).length})` },
                   { id: 'catalog', label: `Catalog (${Object.keys(parsedConfig.catalog || {}).length})` },
                   { id: 'seasonality', label: 'Seasonality & Rules' },
-                  { id: 'funnel', label: 'Durations & Traffic' },
+                  { id: 'funnel', label: 'Funnel & Traffic' },
                   { id: 'events', label: `Events (${Object.keys(parsedConfig.event || {}).length})` },
                   { id: 'growth', label: 'Growth Models' },
                 ] as const
@@ -473,9 +486,51 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             />
           )}
 
-          {/* Sub-Tab 4: Funnel Durations & Peak Hours */}
+          {/* Sub-Tab 4: Fallback Funnel Rates, Durations & Peak Hours */}
           {activeAdvancedTab === 'funnel' && (
             <div className="space-y-6">
+              {/* Fallback Funnel Conversion Rates */}
+              <div className="p-4 rounded-lg border border-inherit bg-black/5 dark:bg-white/5 space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    Fallback Funnel Conversion Rates (funnel.yaml)
+                  </h4>
+                  <p className={`text-[11px] ${theme.mutedClass}`}>
+                    Used only when a customer tier does not define its own conversion rate for that stage.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                  {[
+                    { key: 'landing_page', label: 'Landing -> Product View', fallback: 0.15 },
+                    { key: 'product_view', label: 'Product View -> Cart', fallback: 0.25 },
+                    { key: 'add_to_cart', label: 'Cart -> Checkout', fallback: 0.4 },
+                    { key: 'checkout', label: 'Checkout -> Paid', fallback: 0.5 },
+                  ].map((step) => {
+                    const rate = parsedConfig.funnel?.[step.key]?.conversion_rate ?? step.fallback;
+                    return (
+                      <label
+                        key={step.key}
+                        className="flex items-center justify-between gap-2 p-2.5 rounded border border-inherit/60"
+                      >
+                        <span className={theme.mutedClass}>{step.label}</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max="1.0"
+                          value={rate}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            if (!Number.isNaN(v)) updateField(['funnel', step.key, 'conversion_rate'], v);
+                          }}
+                          className={`w-16 text-right rounded px-1.5 py-0.5 font-mono tabular-nums border ${theme.inputClass}`}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />

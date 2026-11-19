@@ -102,7 +102,8 @@ type LeverKey =
   | 'subcategory_allow_duplicates'
   | 'funnel_noise'
   | 'seed_for_date'
-  | 'tier_visibility';
+  | 'tier_visibility'
+  | 'global_fallbacks';
 
 interface LeverGlossaryItem {
   key: LeverKey;
@@ -169,6 +170,14 @@ const SIMULATION_LEVERS: LeverGlossaryItem[] = [
     summary: 'Internal persona label hidden in CSV downloads by default so clustering exercises stay honest.',
     mechanism: 'Algorithms like K-Means or GMM should infer customer segments from RFM spend, order frequency, and basket mix rather than leaking config tier names. Enable the toggle anytime for debugging.',
     outputImpact: 'Affects user.csv, funnel.csv, transaction.csv, and transaction_item.csv columns.',
+  },
+  {
+    key: 'global_fallbacks',
+    label: 'global fallbacks vs. tier overrides',
+    yamlPath: 'funnel.* / simulation.basket / simulation.quantity_model',
+    summary: 'Global funnel conversion rates, basket min/max bounds, weekday visit_chance, and base_lambda act strictly as fallbacks when a tier omits them.',
+    mechanism: 'All six built-in customer tiers define their own conversion_rate, basket, visit_chance, and quantity_model values, so editing those global defaults only affects newly created or custom tiers that leave them unset.',
+    outputImpact: 'To shift all existing tiers simultaneously, use growth multipliers (growth.base.overall), events, price_variation, or edit each tier directly.',
   },
 ];
 
