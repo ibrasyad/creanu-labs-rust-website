@@ -1,68 +1,85 @@
 # Deployment Guide: Creanu Labs on Cloudflare Workers
 
-Creanu Labs runs entirely client-side using in-browser WebAssembly and React. Cloudflare Workers serves the pre-compiled static assets with ultra-low latency across Cloudflare's global edge network at **zero server compute cost**.
+Creanu Labs runs 100% client-side in the browser (React + Web Worker engine). Cloudflare Workers serves the static site cleanly across Cloudflare's global edge network at **zero server compute cost**.
 
 ---
 
-## 1. Local Development
+## 1. Deploy via Cloudflare Dashboard (Workers Builds — Git Integration)
 
-To run the application locally on your machine:
+Follow these exact steps inside **dash.cloudflare.com** to connect GitHub directly so every push to `main` builds and deploys automatically:
 
-```powershell
+1. Open [dash.cloudflare.com](https://dash.cloudflare.com) and go to **Compute (Workers)** &rarr; **Workers & Pages**.
+2. Click **Create** (or **Create application**) &rarr; **Import a repository** (Connect to GitHub) and select your repository (`ibrasyad/creanu-labs-rust-website`).
+3. Enter these exact **Build configuration** fields:
+   - **Project / Worker name**: `creanu-labs-simulator`
+     > **Important:** This name **must** match `"name"` inside `web/wrangler.jsonc`, otherwise `wrangler deploy` will fail with a name mismatch error.
+   - **Root directory** (under Build paths): `web`
+   - **Build command**: `npm run build:cf`
+   - **Deploy command**: `npx wrangler deploy`
+4. Click **Save and Deploy**.
+5. *(Recommended)* After the first deploy finishes, open your Worker &rarr; **Settings** &rarr; **Builds** &rarr; **Build watch paths** and add:
+   - `web/**`
+   - `config/**`
+   - `engine/**`
+   This ensures edits to YAML presets (`config/`) or Rust (`engine/`) also trigger a rebuild.
+6. *(Optional Custom Domain)* Open your Worker &rarr; **Settings** &rarr; **Domains & Routes** &rarr; **Add** &rarr; **Custom domain** if you want to serve it on your own domain instead of `creanu-labs-simulator.<your-subdomain>.workers.dev`.
+
+### What Happens Inside `npm run build:cf`?
+1. Syncs `config/*.yaml` into `web/src/engine/defaultConfig.ts`.
+2. Checks if `cargo` and `wasm-pack` are installed in the build container:
+   - If present, prints `[engine: wasm]`, runs `cargo test`, and compiles `engine/` into `web/src/wasm-pkg/`.
+   - If absent (typical on Cloudflare's standard Node.js Workers Builds container), prints `[engine: typescript-fallback]` and bundles the TypeScript Web Worker simulator with zero errors.
+3. Runs `tsc && vite build` to output static assets to `web/dist/`.
+
+> **Tip — Avoiding Duplicate Deploys:** If you connect GitHub in the Cloudflare Dashboard (**Workers Builds**), every push to `main` will trigger Cloudflare directly. Notice this repo also includes `.github/workflows/deploy-cloudflare.yml` (which installs Rust + `wasm-pack` on GitHub runners). Choose **one** active auto-deploy path:
+> - Use **Workers Builds** for zero-secret dashboard simplicity (TypeScript engine on edge unless Rust is in the build image).
+> - Or keep **GitHub Actions** active for automatic Rust/WebAssembly compilation and pause automatic branch builds inside Cloudflare Dashboard.
+
+---
+
+## 2. Automated Rust/Wasm + Edge Deploy via GitHub Actions
+
+If you want GitHub runners to run `cargo test` and compile `engine/` to WebAssembly on every push to `main` before deploying to Cloudflare:
+
+1. In Cloudflare Dashboard &rarr; **My Profile** &rarr; **API Tokens** &rarr; **Create Token**, use the **Edit Cloudflare Workers** template.
+2. Copy your **Account ID** from the right sidebar of **Workers & Pages**.
+3. In your GitHub repository, open **Settings** &rarr; **Secrets and variables** &rarr; **Actions** and add:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+4. Pushes to `main` touching `web/**`, `engine/**`, or `config/**` will automatically run `.github/workflows/deploy-cloudflare.yml`.
+
+---
+
+## 3. Manual CLI Deploy via Wrangler
+
+From your local machine:
+
+```bash
 cd web
-npm run dev
+npx wrangler login
+npm run build:cf
+npx wrangler deploy
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. You can immediately edit configs in Visual Form or Monaco YAML mode, run simulations, view conversion funnels, and download CSV/ZIP packages!
-
 ---
 
-## 2. Deploy via Wrangler CLI (1-Click Local Deploy)
-
-If you have a Cloudflare account:
-
-1. **Log in to Cloudflare from your terminal:**
-   ```powershell
-   cd web
-   npx wrangler login
-   ```
-2. **Deploy directly to your Cloudflare Workers edge:**
-   ```powershell
-   npm run build
-   npx wrangler deploy
-   ```
-
-Wrangler will upload `web/dist` and give you a public URL (e.g., `https://creanu-labs-simulator.<your-subdomain>.workers.dev`).
-
----
-
-## 3. Automated CI/CD via GitHub Actions
-
-The repository includes a ready-to-run GitHub Actions workflow at [deploy-cloudflare.yml](file:///d:/Windsurf/lettuce-melon/.github/workflows/deploy-cloudflare.yml).
-
-To enable automatic deployment on every `git push`:
-
-1. In your GitHub repository, go to **Settings > Secrets and variables > Actions**.
-2. Add two repository secrets:
-   - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token with **Edit Cloudflare Workers** permissions (created at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens)).
-   - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare Account ID (found on your Workers dashboard sidebar).
-3. Now, whenever you push changes to `main`, GitHub Actions will automatically build the React app and deploy it to Cloudflare!
-
----
-
-## 4. Configuration Schema (`wrangler.jsonc`)
-
-The Cloudflare configuration is located at [web/wrangler.jsonc](file:///d:/Windsurf/lettuce-melon/web/wrangler.jsonc):
+## 4. Configuration Reference (`web/wrangler.jsonc`)
 
 ```jsonc
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "creanu-labs-simulator",
   "compatibility_date": "2024-11-01",
+  "observability": {
+    "enabled": true
+  },
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
   }
 }
 ```
 
-This deploys the site as an assets-only Worker. Do not add an `assets.binding` unless you also configure a Worker script (`main`) that uses the binding.
+- `"not_found_handling": "single-page-application"` guarantees shared scenario URLs (`?preset=...&patch=...`) resolve cleanly to `index.html` instead of returning a 404.
+- Do not add `"assets.binding"` unless you also define a `"main"` Worker script that consumes that binding.
+
