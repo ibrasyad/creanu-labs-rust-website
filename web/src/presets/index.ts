@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { PresetScenario } from '../types/simulation';
 import { DEFAULT_CONFIG_YAML } from '../engine/defaultConfig';
 

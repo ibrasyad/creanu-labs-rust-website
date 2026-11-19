@@ -14,7 +14,7 @@ import { SimulationOutput } from './types/simulation';
 import { ThemeMode, SWISS_THEMES } from './types/theme';
 import { buildShareUrl, hydrateScenarioFromUrl } from './utils/shareUrl';
 import { Sparkles, BarChart2, AlertCircle, X } from 'lucide-react';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 function extractDateBounds(yamlStr: string): { startDate: string; endDate: string; totalDays: number } {
   try {

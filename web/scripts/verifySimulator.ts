@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { DEFAULT_CONFIG_YAML } from '../src/engine/defaultConfig';
 import { runSimulationClient } from '../src/engine/simulator';
 import { PRESET_SCENARIOS } from '../src/presets';

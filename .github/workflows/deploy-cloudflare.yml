@@ -36,13 +36,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
       - name: Install Dependencies
         working-directory: web
-        run: npm install
+        run: npm ci
 
       - name: Bundle YAML Config & Build Web Application
         working-directory: web

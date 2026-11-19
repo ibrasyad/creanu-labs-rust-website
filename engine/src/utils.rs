@@ -1,4 +1,4 @@
-use chrono::{Datelike, NaiveDate};
+use chrono::NaiveDate;
 use rand::Rng;
 use rand_distr::{Distribution, LogNormal, Normal, Poisson};
 use sha2::{Digest, Sha256};
@@ -18,18 +18,26 @@ pub fn seed_for_date(base_seed: u64, date_str: &str) -> u64 {
     u64::from_be_bytes(bytes) % (1u64 << 32)
 }
 
-/// Choose an item from a weighted map: key -> weight
+/// Choose an item from a weighted map: key -> weight (deterministic sorted iteration)
 pub fn weighted_choice<'a, R: Rng>(weights: &'a HashMap<String, f64>, rng: &mut R) -> Option<&'a String> {
     if weights.is_empty() {
         return None;
     }
-    let total_weight: f64 = weights.values().filter(|&&w| w > 0.0).sum();
+    let mut keys: Vec<&String> = weights.keys().collect();
+    keys.sort();
+
+    let total_weight: f64 = keys
+        .iter()
+        .map(|&k| weights[k])
+        .filter(|&w| w.is_finite() && w > 0.0)
+        .sum();
     if total_weight <= 0.0 {
-        return weights.keys().next();
+        return keys.first().copied();
     }
     let mut draw = rng.gen_range(0.0..total_weight);
-    for (key, &weight) in weights {
-        if weight <= 0.0 {
+    for &key in &keys {
+        let weight = weights[key];
+        if !weight.is_finite() || weight <= 0.0 {
             continue;
         }
         if draw < weight {
@@ -37,7 +45,7 @@ pub fn weighted_choice<'a, R: Rng>(weights: &'a HashMap<String, f64>, rng: &mut 
         }
         draw -= weight;
     }
-    weights.keys().last()
+    keys.last().copied()
 }
 
 /// Apply a mean-one noise multiplier matching Python apply_noise()
@@ -83,6 +91,7 @@ pub fn sample_triangular<R: Rng>(min: f64, max: f64, mode: f64, rng: &mut R) -> 
     if min >= max {
         return min;
     }
+    let mode = mode.clamp(min, max);
     let f = (mode - min) / (max - min);
     let u: f64 = rng.gen();
     if u <= f {

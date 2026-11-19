@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 
 export interface YamlDiffEntry {
   path: string;
@@ -91,8 +91,8 @@ export function diffYamlConfigs(defaultYaml: string, currentYaml: string): {
   parseError: string | null;
 } {
   try {
-    const baseParsed = yaml.load(defaultYaml) ?? {};
-    const currentParsed = yaml.load(currentYaml) ?? {};
+    const baseParsed = (defaultYaml.trim() ? yaml.load(defaultYaml) : {}) ?? {};
+    const currentParsed = (currentYaml.trim() ? yaml.load(currentYaml) : {}) ?? {};
     const entries: YamlDiffEntry[] = [];
     collectDiffs(baseParsed, currentParsed, '', entries);
     return { entries, parseError: null };

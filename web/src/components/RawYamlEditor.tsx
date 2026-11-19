@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Copy, Check, RotateCcw, AlertCircle, FileCode } from 'lucide-react';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { ThemeConfig } from '../types/theme';
 import { DEFAULT_CONFIG_YAML } from '../engine/defaultConfig';
 

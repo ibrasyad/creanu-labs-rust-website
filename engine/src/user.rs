@@ -43,15 +43,21 @@ pub fn generate_user_record<R: Rng>(
 ) -> UserRecord {
     let default_city = default_cities();
     let city_weights = tier_cfg.city.as_ref().unwrap_or(&default_city);
-    let city = weighted_choice(city_weights, rng).unwrap_or(&"Jakarta".to_string()).clone();
+    let city = weighted_choice(city_weights, rng)
+        .cloned()
+        .unwrap_or_else(|| "Jakarta".to_string());
 
     let default_gender = default_genders();
     let gender_weights = tier_cfg.gender.as_ref().unwrap_or(&default_gender);
-    let gender = weighted_choice(gender_weights, rng).unwrap_or(&"Female".to_string()).clone();
+    let gender = weighted_choice(gender_weights, rng)
+        .cloned()
+        .unwrap_or_else(|| "Female".to_string());
 
     let default_channel = default_channels();
     let channel_weights = tier_cfg.acquisition_channel.as_ref().unwrap_or(&default_channel);
-    let channel = weighted_choice(channel_weights, rng).unwrap_or(&"Organic Search".to_string()).clone();
+    let channel = weighted_choice(channel_weights, rng)
+        .cloned()
+        .unwrap_or_else(|| "Organic Search".to_string());
 
     UserRecord {
         tier: tier_name.to_string(),
@@ -64,12 +70,16 @@ pub fn generate_user_record<R: Rng>(
     }
 }
 
-/// Generate initial base users for simulation start
+/// Generate initial base users for simulation start in deterministic tier order
 pub fn generate_base_users<R: Rng>(config: &FullSimulationConfig, start_date: &str, rng: &mut R) -> Vec<UserRecord> {
     let mut users = Vec::new();
     let mut user_counter = 1;
 
-    for (tier_name, tier_cfg) in &config.tiers {
+    let mut tier_names: Vec<&String> = config.tiers.keys().collect();
+    tier_names.sort();
+
+    for tier_name in tier_names {
+        let tier_cfg = &config.tiers[tier_name];
         for _ in 0..tier_cfg.base_user {
             users.push(generate_user_record(tier_name, tier_cfg, user_counter, start_date, rng));
             user_counter += 1;
@@ -82,6 +92,7 @@ pub fn generate_base_users<R: Rng>(config: &FullSimulationConfig, start_date: &s
 pub fn roll_new_users_for_tier<R: Rng>(
     tier_cfg: &TierConfig,
     date: NaiveDate,
+    new_user_multiplier: f64,
     rng: &mut R,
 ) -> usize {
     let weekday = get_day_of_week(date);
@@ -91,13 +102,14 @@ pub fn roll_new_users_for_tier<R: Rng>(
     } else {
         tier_cfg.daily_new_user_chance
     };
+    let effective_chance = (base_chance * new_user_multiplier).clamp(0.0, 1.0);
 
     let retries = tier_cfg.daily_retry.max(1);
     let mut new_users = 0;
 
     for _ in 0..retries {
         let draw: f64 = rng.gen();
-        if draw < base_chance {
+        if draw < effective_chance {
             new_users += 1;
         }
     }

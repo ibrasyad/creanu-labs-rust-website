@@ -69,7 +69,8 @@ fn pick_candidate<R: Rng>(
         let subcategory_name = if let Some(sub_weights) = tier_cfg.subcategory_weight.as_ref().and_then(|w| w.get(category)) {
             weighted_choice(sub_weights, rng).cloned()
         } else {
-            let names: Vec<&String> = subcategories.keys().collect();
+            let mut names: Vec<&String> = subcategories.keys().collect();
+            names.sort();
             names.get(rng.gen_range(0..names.len())).map(|&s| s.clone())
         };
 

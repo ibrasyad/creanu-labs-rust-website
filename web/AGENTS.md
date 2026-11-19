@@ -5,8 +5,8 @@ Applies to the React + TypeScript + Vite web application inside `web/`.
 ## 1. Tech Stack (Active vs. Master Plan)
 
 - **Active Stack**:
-  - **UI**: React 18 (`^18.3.1`), TypeScript (`strict: true`, `noUnusedLocals`, `noUnusedParameters`), Vite 6, Tailwind CSS v3.
-  - **Libraries**: `recharts` (charts), `js-yaml` (YAML parsing/dumping), `jszip` (in-browser `.zip` export), `lucide-react` (icons), `clsx` + `tailwind-merge`.
+  - **UI**: React 19 (`^19.3.1`), TypeScript 7 (`strict: true`, `noUnusedLocals`, `noUnusedParameters`), Vite 8, Tailwind CSS v4 (`@tailwindcss/vite`).
+  - **Libraries**: `recharts` v3 (charts), `js-yaml` v5 (YAML parsing/dumping), `jszip` (in-browser `.zip` export), `lucide-react` (icons), `clsx` + `tailwind-merge`.
   - **Simulation Execution**: Asynchronous Web Worker (`src/engine/simulation.worker.ts` + `src/engine/engineClient.ts`) that loads the compiled Rust/Wasm bundle (`src/wasm-pkg/` built in CI) when available and automatically falls back to the TypeScript client engine (`src/engine/simulator.ts`), with instant worker termination for Cancel.
   - **YAML Editor**: `RawYamlEditor.tsx` uses a custom full-length line-numbered `<textarea>` with synced scroll and inline reset confirmation. Legacy unused `@monaco-editor/react` was removed.
 - **Target Master Plan Trajectory**:

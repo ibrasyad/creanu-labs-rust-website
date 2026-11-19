@@ -29,6 +29,7 @@ pub fn rolls_landing_page<R: Rng>(
     tier_cfg: &TierConfig,
     current_date: NaiveDate,
     decay: f64,
+    visit_multiplier: f64,
     rng: &mut R,
 ) -> bool {
     let weekday = get_day_of_week(current_date);
@@ -39,9 +40,11 @@ pub fn rolls_landing_page<R: Rng>(
 
     let month_mult = tier_cfg.monthly_visit_chance_multiplier.get(&month).copied().unwrap_or(1.0);
     chance *= month_mult;
+    chance *= visit_multiplier;
 
-    // Apply funnel noise if configured
-    chance = apply_noise(chance, tier_cfg.funnel_noise.as_ref(), rng);
+    // Apply funnel noise if configured (tier override -> global funnel fallback)
+    let noise_cfg = tier_cfg.funnel_noise.as_ref().or(config.funnel.funnel_noise.as_ref());
+    chance = apply_noise(chance, noise_cfg, rng);
     chance *= decay;
 
     if decay <= 0.0 {
@@ -52,24 +55,35 @@ pub fn rolls_landing_page<R: Rng>(
     draw < chance.clamp(0.0, 1.0)
 }
 
-/// Generate timestamp for landing page based on tier peak hours
+/// Generate timestamp for landing page based on tier peak hours (falling back to funnel defaults)
 pub fn generate_landing_timestamp<R: Rng>(
+    config: &FullSimulationConfig,
     current_date: NaiveDate,
     tier_cfg: &TierConfig,
     rng: &mut R,
 ) -> NaiveDateTime {
-    let hour = if !tier_cfg.visit_hour_peak.is_empty() {
-        let peak_weights: HashMap<String, f64> = tier_cfg
-            .visit_hour_peak
+    let peaks = if !tier_cfg.visit_hour_peak.is_empty() {
+        &tier_cfg.visit_hour_peak
+    } else {
+        &config.funnel.visit_hour_peak
+    };
+
+    let hour = if !peaks.is_empty() {
+        let peak_weights: HashMap<String, f64> = peaks
             .iter()
             .map(|(k, v)| (k.clone(), v.weight))
             .collect();
 
-        let peak_key = weighted_choice(&peak_weights, rng).unwrap();
-        let peak = &tier_cfg.visit_hour_peak[peak_key];
-        let normal = Normal::new(peak.hour.avg, 2.0).unwrap_or(Normal::new(19.0, 2.0).unwrap());
-        let raw_hour = normal.sample(rng).round() as i64;
-        raw_hour.clamp(peak.hour.min as i64, peak.hour.max as i64) as u32
+        if let Some(peak_key) = weighted_choice(&peak_weights, rng) {
+            let peak = &peaks[peak_key];
+            let normal = Normal::new(peak.hour.avg, 2.0).unwrap_or_else(|_| Normal::new(19.0, 2.0).unwrap());
+            let raw_hour = normal.sample(rng).round() as i64;
+            let lo = peak.hour.min.min(peak.hour.max) as i64;
+            let hi = peak.hour.min.max(peak.hour.max) as i64;
+            raw_hour.clamp(lo, hi).clamp(0, 23) as u32
+        } else {
+            rng.gen_range(9..22)
+        }
     } else {
         rng.gen_range(9..22)
     };
@@ -82,13 +96,16 @@ pub fn generate_landing_timestamp<R: Rng>(
 
 /// Generate random duration for a funnel step
 pub fn sample_duration<R: Rng>(duration_cfg: &DurationConfig, rng: &mut R) -> Duration {
-    let min = duration_cfg.min_duration as f64;
-    let max = duration_cfg.max_duration as f64;
-    let avg = duration_cfg.avg_duration as f64;
+    let raw_min = duration_cfg.min_duration as f64;
+    let raw_max = duration_cfg.max_duration as f64;
+    let lo = raw_min.min(raw_max);
+    let hi = raw_min.max(raw_max);
+    let avg = (duration_cfg.avg_duration as f64).clamp(lo, hi);
+    let std_dev = ((hi - lo) / 6.0).max(0.01);
 
-    let normal = Normal::new(avg, (max - min) / 6.0).unwrap_or(Normal::new(avg, 1.0).unwrap());
+    let normal = Normal::new(avg, std_dev).unwrap_or_else(|_| Normal::new(avg, 1.0).unwrap());
     let raw = normal.sample(rng);
-    let secs = raw.clamp(min, max).round() as i64;
+    let secs = raw.clamp(lo, hi).round() as i64;
     Duration::seconds(secs.max(1))
 }
 
@@ -100,10 +117,11 @@ pub fn simulate_user_journey<R: Rng>(
     user_id: &str,
     session_id: &str,
     current_date: NaiveDate,
+    step_conversion_multipliers: &[f64; 4],
     rng: &mut R,
 ) -> (Vec<FunnelEventRecord>, bool, Option<String>) {
     let mut events = Vec::new();
-    let start_dt = generate_landing_timestamp(current_date, tier_cfg, rng);
+    let start_dt = generate_landing_timestamp(config, current_date, tier_cfg, rng);
     let mut current_dt = start_dt;
 
     // 1. landing_page
@@ -118,10 +136,11 @@ pub fn simulate_user_journey<R: Rng>(
     let stages = ["product_view", "add_to_cart", "checkout", "paid"];
     let mut reached_paid = false;
     let mut paid_datetime = None;
+    let noise_cfg = tier_cfg.funnel_noise.as_ref().or(config.funnel.funnel_noise.as_ref());
 
-    for &stage in &stages {
+    for (idx, &stage) in stages.iter().enumerate() {
         // Look up conversion rate: tier override -> funnel default
-        let (rate, duration_cfg) = match stage {
+        let (base_rate, duration_cfg) = match stage {
             "product_view" => (
                 tier_cfg.landing_page.as_ref().map(|s| s.conversion_rate).unwrap_or(config.funnel.landing_page.conversion_rate),
                 tier_cfg.landing_page.as_ref().and_then(|s| s.duration.as_ref()).or(config.funnel.landing_page.duration.as_ref()),
@@ -141,7 +160,8 @@ pub fn simulate_user_journey<R: Rng>(
             _ => (0.0, None),
         };
 
-        let rate = apply_noise(rate, tier_cfg.funnel_noise.as_ref(), rng).clamp(0.0, 1.0);
+        let scaled_rate = base_rate * step_conversion_multipliers[idx];
+        let rate = apply_noise(scaled_rate, noise_cfg, rng).clamp(0.0, 1.0);
         let roll: f64 = rng.gen();
 
         if roll < rate {

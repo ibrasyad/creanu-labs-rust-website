@@ -10,7 +10,7 @@ import {
   Line,
   CartesianGrid,
   ReferenceLine,
-  Cell,
+  Rectangle,
   Legend,
 } from 'recharts';
 import { TrendingUp, ShoppingCart, DollarSign, Percent, Award, GitCompareArrows, Layers, FileDiff, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
@@ -551,11 +551,15 @@ export const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
                       );
                     }}
                   />
-                  <Bar dataKey="diffRevenue" name="Revenue Diff" radius={[3, 3, 0, 0]}>
-                    {aggregatedComparisonData.map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={entry.diffRevenue >= 0 ? positiveColor : negativeColor} />
-                    ))}
-                  </Bar>
+                  <Bar
+                    dataKey="diffRevenue"
+                    name="Revenue Diff"
+                    radius={[3, 3, 0, 0]}
+                    shape={(props: any) => {
+                      const fill = (props?.payload?.diffRevenue ?? 0) >= 0 ? positiveColor : negativeColor;
+                      return <Rectangle {...props} fill={fill} />;
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
