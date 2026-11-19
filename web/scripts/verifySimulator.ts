@@ -51,4 +51,42 @@ const hydratedParsed = yaml.load(hydrated.configYaml) as any;
 assert.equal(hydratedParsed.simulation.random_seed, 999999);
 assert.equal(hydratedParsed.tiers.family_shoppers.base_user, 42);
 
+// 5. Verify custom tier demographics, permanent ongoing campaigns, and exact date campaigns
+const customCfg = yaml.load(DEFAULT_CONFIG_YAML) as any;
+customCfg.date.start_date = '2026-01-01';
+customCfg.date.end_date = '2026-01-03';
+customCfg.tiers = {
+  vip_cafe: {
+    profile: 'balanced',
+    base_user: 15,
+    daily_retry: 1,
+    daily_new_user_chance: 0,
+    daily_new_user_chance_weekend: 0,
+    city: { bandung_exclusive: 100 },
+    gender: { non_binary: 100 },
+    acquisition_channel: { partner_referral: 100 },
+    visit_chance: { monday: 1, tuesday: 1, wednesday: 1, thursday: 1, friday: 1, saturday: 1, sunday: 1 },
+    monthly_visit_chance_multiplier: { january: 1.0 },
+    category_weight: { beverages: 1.0 },
+  },
+};
+customCfg.event = {
+  permanent_test: {
+    name: 'Permanent',
+    year: 1,
+    start_month: 1,
+    end_month: null,
+    overall: { visit: 1.0 },
+  },
+  date_window_test: {
+    name: 'Exact Window',
+    start_date: '2026-01-02',
+    end_date: '2026-01-03',
+    overall: { visit: 1.0 },
+  },
+};
+const customOut = runSimulationClient(yaml.dump(customCfg));
+assert.equal(customOut.users.length, 15);
+assert.ok(customOut.users.every((u) => u.city === 'bandung_exclusive' && u.gender === 'non_binary' && u.acquisition_channel === 'partner_referral'));
+
 console.log('ALL WEB SIMULATOR & UTILITY CHECKS PASSED');

@@ -78,10 +78,33 @@ fn get_growth_multiplier(
     mult
 }
 
+fn is_campaign_active(campaign: &crate::config::CampaignConfig, sim_year: u32, month: u32, date_str: &str) -> bool {
+    if campaign.start_date.is_some() || campaign.end_date.is_some() {
+        if let Some(ref sd) = campaign.start_date {
+            if !sd.is_empty() && date_str < sd.as_str() {
+                return false;
+            }
+        }
+        if let Some(ref ed) = campaign.end_date {
+            if !ed.is_empty() && date_str > ed.as_str() {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    let start_m = campaign.start_month.unwrap_or(1);
+    match campaign.end_month {
+        None => sim_year > campaign.year || (sim_year == campaign.year && month >= start_m),
+        Some(end_m) => sim_year == campaign.year && month >= start_m && month <= end_m,
+    }
+}
+
 fn get_event_multiplier(
     config: &FullSimulationConfig,
     sim_year: u32,
     month: u32,
+    date_str: &str,
     tier_name: &str,
     profile: &str,
     metric: &str,
@@ -97,12 +120,7 @@ fn get_event_multiplier(
     let mut mult = 1.0;
     for key in keys {
         let campaign = &events[key];
-        if campaign.year != sim_year {
-            continue;
-        }
-        let start_m = campaign.start_month.unwrap_or(1);
-        let end_m = campaign.end_month.unwrap_or(12);
-        if month < start_m || month > end_m {
+        if !is_campaign_active(campaign, sim_year, month, date_str) {
             continue;
         }
 
@@ -226,6 +244,7 @@ pub fn run_simulation(
                     config,
                     sim_year,
                     current_month_num,
+                    &date_str,
                     tier_name,
                     &tier_cfg.profile,
                     "new_user",
@@ -270,6 +289,7 @@ pub fn run_simulation(
                     config,
                     sim_year,
                     current_month_num,
+                    &date_str,
                     &user.tier,
                     &tier_cfg.profile,
                     "visit",
@@ -289,6 +309,7 @@ pub fn run_simulation(
                             config,
                             sim_year,
                             current_month_num,
+                            &date_str,
                             &user.tier,
                             &tier_cfg.profile,
                             "conversion",
@@ -299,6 +320,7 @@ pub fn run_simulation(
                             config,
                             sim_year,
                             current_month_num,
+                            &date_str,
                             &user.tier,
                             &tier_cfg.profile,
                             "conversion",
@@ -309,6 +331,7 @@ pub fn run_simulation(
                             config,
                             sim_year,
                             current_month_num,
+                            &date_str,
                             &user.tier,
                             &tier_cfg.profile,
                             "conversion",
@@ -319,6 +342,7 @@ pub fn run_simulation(
                             config,
                             sim_year,
                             current_month_num,
+                            &date_str,
                             &user.tier,
                             &tier_cfg.profile,
                             "conversion",
@@ -621,6 +645,50 @@ tiers:
         assert_eq!(out1.users.len(), out2.users.len());
         assert_eq!(out1.transactions.len(), out2.transactions.len());
         assert_eq!(out1.transactions.len() > 0, true);
+    }
+
+    #[test]
+    fn ongoing_and_date_range_campaigns_apply_correctly() {
+        let yaml = r#"
+simulation:
+  random_seed: 1
+date:
+  start_date: "2026-01-01"
+  end_date: "2026-01-02"
+  transaction_volume: {}
+catalog:
+  vegetables:
+    leafy_greens:
+      product:
+        spinach: { base_price: 4000 }
+funnel: {}
+event:
+  permanent_lift:
+    name: "Permanent"
+    year: 1
+    start_month: 5
+    end_month: null
+    overall:
+      visit: 1.5
+  exact_dates:
+    name: "Exact"
+    start_date: "2027-02-01"
+    end_date: "2027-02-10"
+    overall:
+      visit: 2.0
+tiers:
+  family:
+    base_user: 1
+    category_weight:
+      vegetables: 1.0
+"#;
+        let cfg = FullSimulationConfig::from_yaml(yaml).unwrap();
+        let events = cfg.event.as_ref().unwrap();
+        assert!(!is_campaign_active(&events["permanent_lift"], 1, 4, "2026-04-15"));
+        assert!(is_campaign_active(&events["permanent_lift"], 1, 5, "2026-05-01"));
+        assert!(is_campaign_active(&events["permanent_lift"], 2, 1, "2027-01-15"));
+        assert!(!is_campaign_active(&events["exact_dates"], 2, 1, "2027-01-31"));
+        assert!(is_campaign_active(&events["exact_dates"], 2, 2, "2027-02-05"));
     }
 }
 

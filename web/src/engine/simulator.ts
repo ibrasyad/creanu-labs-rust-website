@@ -188,10 +188,35 @@ function getGrowthMultiplier(
   return baseOverall * baseProfile * yearlyOverall * yearlyProfile;
 }
 
+function isCampaignActive(
+  event: any,
+  simYear: number,
+  currentMonth: number,
+  dateStr: string
+): boolean {
+  if (!event) return false;
+  const startDate = event.start_date ? String(event.start_date) : '';
+  const endDate = event.end_date ? String(event.end_date) : '';
+  if (startDate || endDate) {
+    if (startDate && dateStr < startDate) return false;
+    if (endDate && dateStr > endDate) return false;
+    return true;
+  }
+
+  const eventYear = Number(event.year ?? 1);
+  const startM = Number(event.start_month ?? 1);
+  const endM = event.end_month;
+  if (endM === null || endM === undefined) {
+    return simYear > eventYear || (simYear === eventYear && currentMonth >= startM);
+  }
+  return simYear === eventYear && currentMonth >= startM && currentMonth <= Number(endM);
+}
+
 function getEventMultiplier(
   eventsCfg: any,
   simYear: number,
   currentMonth: number,
+  dateStr: string,
   tierName: string,
   profile: string,
   metric: 'new_user' | 'visit' | 'conversion',
@@ -201,10 +226,7 @@ function getEventMultiplier(
   let mult = 1.0;
 
   for (const event of Object.values<any>(eventsCfg)) {
-    if (!event || event.year !== simYear) continue;
-    const startM = event.start_month || 1;
-    const endM = event.end_month || 12;
-    if (currentMonth < startM || currentMonth > endM) continue;
+    if (!isCampaignActive(event, simYear, currentMonth, dateStr)) continue;
 
     let target = event.tiers?.[tierName]?.[metric];
     if (target === undefined && profile) {
@@ -241,28 +263,38 @@ export function runSimulationClient(
   const endDate = new Date(endDateStr);
   const totalDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1);
 
-  // Flatten Catalog (all 19 categories from catalog.yaml)
+  // Flatten Catalog (all categories from catalog.yaml)
   const catalogRecords: CatalogItemRecord[] = [];
-  const catalogMap: Record<string, Record<string, { cooldown: number; products: Record<string, { base_price: number; weight: number }> }>> = {};
+  const catalogMap: Record<
+    string,
+    Record<
+      string,
+      {
+        cooldown: number;
+        products: Record<string, { base_price: number; weight: number; cooldown?: number }>;
+      }
+    >
+  > = {};
 
   if (cfg.catalog) {
     for (const [catName, subcats] of Object.entries<any>(cfg.catalog)) {
       catalogMap[catName] = {};
-      for (const [subcatName, subcat] of Object.entries<any>(subcats)) {
+      for (const [subcatName, subcat] of Object.entries<any>(subcats || {})) {
         catalogMap[catName][subcatName] = {
-          cooldown: subcat.cooldown || 1,
+          cooldown: Number(subcat?.cooldown ?? 1),
           products: {},
         };
-        for (const [prodName, prod] of Object.entries<any>(subcat.product || {})) {
+        for (const [prodName, prod] of Object.entries<any>(subcat?.product || {})) {
           catalogMap[catName][subcatName].products[prodName] = {
-            base_price: prod.base_price,
-            weight: prod.weight || 1.0,
+            base_price: Number(prod?.base_price ?? 10000),
+            weight: Number(prod?.weight ?? 1.0),
+            cooldown: prod?.cooldown !== undefined && prod?.cooldown !== null ? Number(prod.cooldown) : undefined,
           };
           catalogRecords.push({
             category: catName,
             subcategory: subcatName,
             product: prodName,
-            base_price: prod.base_price,
+            base_price: Number(prod?.base_price ?? 10000),
           });
         }
       }
@@ -271,22 +303,35 @@ export function runSimulationClient(
 
   const allCategoryNames = Object.keys(catalogMap);
 
+  const toWeightedPairs = (mapObj: any, fallback: [string, number][]): [string, number][] => {
+    if (mapObj && typeof mapObj === 'object') {
+      const pairs = Object.entries(mapObj)
+        .map(([k, v]): [string, number] => [k, Number(v ?? 0)])
+        .filter(([, w]) => Number.isFinite(w) && w > 0);
+      if (pairs.length > 0) return pairs;
+    }
+    return fallback;
+  };
+
   // 1. Generate Base Users
   const users: UserRecord[] = [];
   let userCounter = 1;
-  const cities = [['Jakarta', 0.5], ['Surabaya', 0.2], ['Bandung', 0.15], ['Medan', 0.1], ['Semarang', 0.05]] as [string, number][];
-  const genders = [['Female', 0.6], ['Male', 0.4]] as [string, number][];
-  const channels = [['Organic Search', 0.35], ['Social Media', 0.3], ['Referral', 0.2], ['Direct', 0.15]] as [string, number][];
+  const defaultCities = [['Jakarta', 0.5], ['Surabaya', 0.2], ['Bandung', 0.15], ['Medan', 0.1], ['Semarang', 0.05]] as [string, number][];
+  const defaultGenders = [['Female', 0.6], ['Male', 0.4]] as [string, number][];
+  const defaultChannels = [['Organic Search', 0.35], ['Social Media', 0.3], ['Referral', 0.2], ['Direct', 0.15]] as [string, number][];
 
   for (const [tierName, tierCfg] of Object.entries<any>(cfg.tiers || {})) {
-    const baseCount = Number(tierCfg.base_user || 10);
+    const baseCount = Math.max(0, Number(tierCfg?.base_user ?? 10));
+    const tierCities = toWeightedPairs(tierCfg?.city, defaultCities);
+    const tierGenders = toWeightedPairs(tierCfg?.gender, defaultGenders);
+    const tierChannels = toWeightedPairs(tierCfg?.acquisition_channel, defaultChannels);
     for (let i = 0; i < baseCount; i++) {
       users.push({
         tier: tierName,
         user_id: `usr-${String(userCounter++).padStart(6, '0')}`,
-        city: weightedChoice(cities, globalRng),
-        gender: weightedChoice(genders, globalRng),
-        acquisition_channel: weightedChoice(channels, globalRng),
+        city: weightedChoice(tierCities, globalRng),
+        gender: weightedChoice(tierGenders, globalRng),
+        acquisition_channel: weightedChoice(tierChannels, globalRng),
         registered_date: startDateStr,
         last_active_date: startDateStr,
       });
@@ -337,17 +382,20 @@ export function runSimulationClient(
 
       // Apply growth and event multipliers
       chance *= getGrowthMultiplier(current, startDate, cfg.growth, profile, 'new_user');
-      chance *= getEventMultiplier(cfg.event, simYear, currentMonthNum, tierName, profile, 'new_user');
+      chance *= getEventMultiplier(cfg.event, simYear, currentMonthNum, dateStr, tierName, profile, 'new_user');
 
-      const retries = tierCfg.daily_retry || 3;
+      const tierCities = toWeightedPairs(tierCfg?.city, defaultCities);
+      const tierGenders = toWeightedPairs(tierCfg?.gender, defaultGenders);
+      const tierChannels = toWeightedPairs(tierCfg?.acquisition_channel, defaultChannels);
+      const retries = Math.max(1, Number(tierCfg?.daily_retry ?? 3));
       for (let r = 0; r < retries; r++) {
         if (dayRng() < chance) {
           users.push({
             tier: tierName,
             user_id: `usr-${String(userCounter++).padStart(6, '0')}`,
-            city: weightedChoice(cities, dayRng),
-            gender: weightedChoice(genders, dayRng),
-            acquisition_channel: weightedChoice(channels, dayRng),
+            city: weightedChoice(tierCities, dayRng),
+            gender: weightedChoice(tierGenders, dayRng),
+            acquisition_channel: weightedChoice(tierChannels, dayRng),
             registered_date: dateStr,
             last_active_date: dateStr,
           });
@@ -371,10 +419,13 @@ export function runSimulationClient(
       const tierCfg = cfg.tiers?.[u.tier] || {};
       const profile = tierCfg.profile || 'balanced';
 
-      // Visit chance
-      let visitChance = tierCfg.visit_chance?.[weekday] ?? (isWeekend ? 0.08 : 0.05);
+      // Visit chance (tier weekday -> simulation weekday fallback -> default, scaled by monthly multiplier)
+      let visitChance = Number(
+        tierCfg.visit_chance?.[weekday] ?? cfg.simulation?.visit_chance?.[weekday] ?? (isWeekend ? 0.08 : 0.05)
+      );
+      visitChance *= Number(tierCfg.monthly_visit_chance_multiplier?.[currentMonthName] ?? 1.0);
       visitChance *= getGrowthMultiplier(current, startDate, cfg.growth, profile, 'visit');
-      visitChance *= getEventMultiplier(cfg.event, simYear, currentMonthNum, u.tier, profile, 'visit');
+      visitChance *= getEventMultiplier(cfg.event, simYear, currentMonthNum, dateStr, u.tier, profile, 'visit');
       visitChance *= monthlyVolumeMultiplier;
 
       // Engagement decay based on recency, with a small reactivation floor
@@ -422,19 +473,19 @@ export function runSimulationClient(
         const noiseCfg = tierCfg.funnel_noise ?? cfg.funnel?.funnel_noise;
 
         let convProductView = (tierCfg.landing_page?.conversion_rate ?? cfg.funnel?.landing_page?.conversion_rate ?? 0.65) * convGrowth;
-        convProductView *= getEventMultiplier(cfg.event, simYear, currentMonthNum, u.tier, profile, 'conversion', 'landing_page');
+        convProductView *= getEventMultiplier(cfg.event, simYear, currentMonthNum, dateStr, u.tier, profile, 'conversion', 'landing_page');
         convProductView = applyNoise(convProductView, noiseCfg, dayRng);
 
         let convAddToCart = (tierCfg.product_view?.conversion_rate ?? cfg.funnel?.product_view?.conversion_rate ?? 0.50) * convGrowth;
-        convAddToCart *= getEventMultiplier(cfg.event, simYear, currentMonthNum, u.tier, profile, 'conversion', 'product_view');
+        convAddToCart *= getEventMultiplier(cfg.event, simYear, currentMonthNum, dateStr, u.tier, profile, 'conversion', 'product_view');
         convAddToCart = applyNoise(convAddToCart, noiseCfg, dayRng);
 
         let convCheckout = (tierCfg.add_to_cart?.conversion_rate ?? cfg.funnel?.add_to_cart?.conversion_rate ?? 0.60) * convGrowth;
-        convCheckout *= getEventMultiplier(cfg.event, simYear, currentMonthNum, u.tier, profile, 'conversion', 'add_to_cart');
+        convCheckout *= getEventMultiplier(cfg.event, simYear, currentMonthNum, dateStr, u.tier, profile, 'conversion', 'add_to_cart');
         convCheckout = applyNoise(convCheckout, noiseCfg, dayRng);
 
         let convPaid = (tierCfg.checkout?.conversion_rate ?? cfg.funnel?.checkout?.conversion_rate ?? 0.70) * convGrowth;
-        convPaid *= getEventMultiplier(cfg.event, simYear, currentMonthNum, u.tier, profile, 'conversion', 'checkout');
+        convPaid *= getEventMultiplier(cfg.event, simYear, currentMonthNum, dateStr, u.tier, profile, 'conversion', 'checkout');
         convPaid = applyNoise(convPaid, noiseCfg, dayRng);
 
         // Stage dwell time (config/funnel.yaml → duration)
@@ -487,8 +538,9 @@ export function runSimulationClient(
 
         // Generate Basket for Paid Transaction
         if (reachedPaid) {
-          const basketCfg = tierCfg.basket || cfg.simulation?.basket || { min_items: 2, max_items: 8 };
-          const targetItems = Math.max(1, Math.round(sampleTriangular(basketCfg.min_items, basketCfg.max_items, (basketCfg.min_items + basketCfg.max_items) / 2, dayRng)));
+          const minItems = Math.max(1, Number(tierCfg.basket?.min_items ?? cfg.simulation?.basket?.min_items ?? 2));
+          const maxItems = Math.max(minItems, Number(tierCfg.basket?.max_items ?? cfg.simulation?.basket?.max_items ?? 8));
+          const targetItems = Math.max(1, Math.round(sampleTriangular(minItems, maxItems, (minItems + maxItems) / 2, dayRng)));
 
           const trxId = `trx-${sessionId}`;
           let trxTotal = 0;
@@ -509,8 +561,15 @@ export function runSimulationClient(
 
             const subcatNames = Object.keys(subcats);
             if (subcatNames.length === 0) continue;
-            const chosenSubcatName = subcatNames[Math.floor(dayRng() * subcatNames.length)];
+            const subWeightCfg = tierCfg.subcategory_weight?.[chosenCat];
+            const chosenSubcatName = subWeightCfg && typeof subWeightCfg === 'object' && Object.keys(subWeightCfg).length > 0
+              ? weightedChoice(
+                  subcatNames.map((name) => [name, Number(subWeightCfg[name] ?? 0)] as [string, number]),
+                  dayRng
+                )
+              : subcatNames[Math.floor(dayRng() * subcatNames.length)];
             const chosenSubcat = subcats[chosenSubcatName];
+            if (!chosenSubcat) continue;
 
             // Subcategory duplicate control (config/simulation.yaml → subcategory_allow_duplicates)
             const dupRules = {
@@ -519,22 +578,24 @@ export function runSimulationClient(
             };
             if (dupRules[chosenSubcatName] === false && pickedSubcats.has(chosenSubcatName)) continue;
 
+            const prodList = Object.entries(chosenSubcat.products);
+            if (prodList.length === 0) continue;
+            const prodName = weightedChoice(
+              prodList.map(([name, p]) => [name, Number(p.weight ?? 1)] as [string, number]),
+              dayRng
+            );
+            const prodCfg = chosenSubcat.products[prodName];
+            const effectiveCooldown = prodCfg.cooldown ?? chosenSubcat.cooldown;
+
             // Cooldown check
             const histKey = `${u.user_id}:${chosenCat}:${chosenSubcatName}`;
             const lastDate = purchaseHistory.get(histKey);
             if (lastDate) {
               const diffDays = Math.round((current.getTime() - lastDate.getTime()) / (1000 * 3600 * 24));
-              if (diffDays < chosenSubcat.cooldown) continue;
+              if (diffDays < effectiveCooldown) continue;
             }
 
-            const prodList = Object.entries(chosenSubcat.products);
-            if (prodList.length === 0) continue;
-            const chosenProdPair = weightedChoice(
-              prodList.map(([name, p]) => [name, Number(p.weight ?? 1)] as [string, number]),
-              dayRng
-            );
-            const prodName = chosenProdPair;
-            const basePrice = chosenSubcat.products[prodName].base_price;
+            const basePrice = prodCfg.base_price;
 
             // Quantity model (Poisson with tier bias)
             const baseLambda = Number(
@@ -627,7 +688,7 @@ export function runSimulationClient(
 
   const summary: SimulationSummary = {
     total_users: users.length,
-    new_users: users.length - (Object.values<any>(cfg.tiers || {}).reduce((s, t) => s + (t.base_user || 10), 0)),
+    new_users: users.length - (Object.values<any>(cfg.tiers || {}).reduce((s, t) => s + Math.max(0, Number(t?.base_user ?? 10)), 0)),
     total_sessions: funnelCounts['landing_page'] || 0,
     total_transactions: allTrx.length,
     total_items_sold: totalItemsSold,

@@ -71,6 +71,12 @@ export function App() {
 
   const theme = SWISS_THEMES[themeMode];
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', themeMode === 'dark');
+    }
+  }, [themeMode]);
+
   // Execute initial simulation inside background worker on mount
   useEffect(() => {
     let active = true;
@@ -372,9 +378,11 @@ export function App() {
       />
 
       {/* Footer */}
-      <footer className={`border-t ${theme.borderClass} py-3.5 px-6 text-center text-xs opacity-60 flex items-center justify-center gap-2`}>
+      <footer className={`border-t ${theme.borderClass} py-3.5 px-6 text-center text-xs ${theme.mutedClass} flex flex-wrap items-center justify-center gap-x-2 gap-y-1`}>
         <span>Creanu Labs Synthetic Commerce Engine</span>
-        <span>&bull;</span>
+        <span aria-hidden="true">&middot;</span>
+        <span>Swiss Design ({theme.name})</span>
+        <span aria-hidden="true">&middot;</span>
         <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
           <Sparkles className="w-3 h-3" /> Zero Server Compute Cost
         </span>

@@ -332,13 +332,20 @@ pub struct GrowthConfig {
     pub yearly: Option<HashMap<String, GrowthYearlyEntry>>,
 }
 
+fn default_campaign_year() -> u32 { 1 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CampaignConfig {
     pub name: String,
     pub description: Option<String>,
+    #[serde(default = "default_campaign_year")]
     pub year: u32,
     pub start_month: Option<u32>,
     pub end_month: Option<u32>,
+    #[serde(default)]
+    pub start_date: Option<String>,
+    #[serde(default)]
+    pub end_date: Option<String>,
     #[serde(default)]
     pub overall: Option<GrowthMultipliers>,
     #[serde(default)]
