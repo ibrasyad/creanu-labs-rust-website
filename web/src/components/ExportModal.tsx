@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import JSZip from 'jszip';
-import { X, Download, FileText, Archive, CheckCircle2 } from 'lucide-react';
+import { X, Download, FileText, Archive, CheckCircle2, EyeOff, Eye } from 'lucide-react';
 import { SimulationOutput } from '../types/simulation';
 import { ThemeConfig } from '../types/theme';
 import { escapeCsvCell } from '../utils/csv';
@@ -13,6 +13,116 @@ interface ExportModalProps {
   theme: ThemeConfig;
 }
 
+function buildSqlStarterGuide(includeTier: boolean): string {
+  const tierNote = includeTier
+    ? 'This bundle was exported with the optional `tier` column enabled for learning and debugging.'
+    : 'By default, `tier` is omitted from CSV exports so ML/clustering exercises (such as K-Means or RFM) cannot leak config persona names as an answer key. Re-enable "Include config `tier` column" in Export Settings if needed.';
+
+  return `# Creanu Labs — SQL & Analytics Starter Pack
+
+${tierNote}
+
+Load all five CSV files (\`user.csv\`, \`funnel.csv\`, \`transaction.csv\`, \`transaction_item.csv\`, \`catalog.csv\`) into **DuckDB** or **PostgreSQL**, then start with the queries below.
+
+---
+
+## 1. Quick Load (DuckDB CLI / Python / Local Notebook)
+
+\`\`\`sql
+CREATE OR REPLACE TABLE users AS SELECT * FROM read_csv_auto('user.csv');
+CREATE OR REPLACE TABLE funnel AS SELECT * FROM read_csv_auto('funnel.csv');
+CREATE OR REPLACE TABLE transactions AS SELECT * FROM read_csv_auto('transaction.csv');
+CREATE OR REPLACE TABLE transaction_items AS SELECT * FROM read_csv_auto('transaction_item.csv');
+CREATE OR REPLACE TABLE catalog AS SELECT * FROM read_csv_auto('catalog.csv');
+\`\`\`
+
+---
+
+## 2. Daily 5-Stage Funnel Conversion Rate
+
+\`\`\`sql
+WITH stage_counts AS (
+  SELECT
+    CAST(activity_datetime AS DATE) AS session_date,
+    COUNT(DISTINCT CASE WHEN activity = 'landing_page' THEN session_id END) AS landing_sessions,
+    COUNT(DISTINCT CASE WHEN activity = 'product_view' THEN session_id END) AS product_view_sessions,
+    COUNT(DISTINCT CASE WHEN activity = 'add_to_cart' THEN session_id END) AS cart_sessions,
+    COUNT(DISTINCT CASE WHEN activity = 'checkout' THEN session_id END) AS checkout_sessions,
+    COUNT(DISTINCT CASE WHEN activity = 'paid' THEN session_id END) AS paid_sessions
+  FROM funnel
+  GROUP BY 1
+)
+SELECT
+  session_date,
+  landing_sessions,
+  paid_sessions,
+  ROUND(100.0 * paid_sessions / NULLIF(landing_sessions, 0), 2) AS end_to_end_pct
+FROM stage_counts
+ORDER BY session_date;
+\`\`\`
+
+---
+
+## 3. Acquisition Cohort Retention (Weeks Since Registration)
+
+\`\`\`sql
+WITH orders_by_week AS (
+  SELECT
+    u.user_id,
+    DATE_TRUNC('week', CAST(u.registered_date AS DATE)) AS cohort_week,
+    DATE_DIFF('week', CAST(u.registered_date AS DATE), CAST(t.date AS DATE)) AS weeks_since_signup
+  FROM users u
+  JOIN transactions t ON t.user_id = u.user_id
+)
+SELECT
+  cohort_week,
+  weeks_since_signup,
+  COUNT(DISTINCT user_id) AS active_buyers
+FROM orders_by_week
+WHERE weeks_since_signup >= 0
+GROUP BY 1, 2
+ORDER BY 1, 2;
+\`\`\`
+
+---
+
+## 4. Market-Basket Co-Purchase Pairs (Same Order)
+
+\`\`\`sql
+SELECT
+  a.product AS product_a,
+  b.product AS product_b,
+  COUNT(*) AS co_occurrences
+FROM transaction_items a
+JOIN transaction_items b
+  ON a.trx_id = b.trx_id
+ AND a.product < b.product
+GROUP BY 1, 2
+ORDER BY co_occurrences DESC
+LIMIT 20;
+\`\`\`
+
+---
+
+## 5. Behavioral Feature Table for Unsupervised Clustering (RFM + Category Mix)
+
+\`\`\`sql
+SELECT
+  u.user_id,
+  u.city,
+  u.acquisition_channel,
+  COUNT(DISTINCT t.trx_id) AS order_count,
+  COALESCE(SUM(t.total_price), 0) AS lifetime_spend_idr,
+  COALESCE(AVG(t.total_price), 0) AS avg_order_value_idr,
+  DATE_DIFF('day', MAX(CAST(t.date AS DATE)), (SELECT MAX(CAST(date AS DATE)) FROM transactions)) AS recency_days
+FROM users u
+LEFT JOIN transactions t ON t.user_id = u.user_id
+GROUP BY 1, 2, 3
+ORDER BY lifetime_spend_idr DESC;
+\`\`\`
+`;
+}
+
 export const ExportModal: React.FC<ExportModalProps> = ({
   isOpen,
   onClose,
@@ -22,6 +132,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 }) => {
   const [isZipping, setIsZipping] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+  const [includeTier, setIncludeTier] = useState(false);
 
   if (!isOpen || !output) return null;
 
@@ -31,46 +142,53 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     return [headerLine, ...bodyLines].join('\n');
   };
 
-  const getUserCSV = () =>
-    generateCSV(
-      ['tier', 'user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date'],
-      output.users.map((u) => [
-        u.tier,
-        u.user_id,
-        u.city,
-        u.gender,
-        u.acquisition_channel,
-        u.registered_date,
-        u.last_active_date,
-      ])
+  const getUserCSV = () => {
+    const headers = includeTier
+      ? ['tier', 'user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date']
+      : ['user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date'];
+    const rows = output.users.map((u) =>
+      includeTier
+        ? [u.tier, u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date]
+        : [u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date]
     );
+    return generateCSV(headers, rows);
+  };
 
-  const getTrxCSV = () =>
-    generateCSV(
-      ['session_id', 'user_id', 'trx_id', 'date', 'tier', 'total_price'],
-      output.transactions.map((t) => [t.session_id, t.user_id, t.trx_id, t.date, t.tier, t.total_price])
+  const getTrxCSV = () => {
+    const headers = includeTier
+      ? ['session_id', 'user_id', 'trx_id', 'date', 'tier', 'total_price']
+      : ['session_id', 'user_id', 'trx_id', 'date', 'total_price'];
+    const rows = output.transactions.map((t) =>
+      includeTier
+        ? [t.session_id, t.user_id, t.trx_id, t.date, t.tier, t.total_price]
+        : [t.session_id, t.user_id, t.trx_id, t.date, t.total_price]
     );
+    return generateCSV(headers, rows);
+  };
 
-  const getItemCSV = () =>
-    generateCSV(
-      ['trx_id', 'user_id', 'tier', 'date', 'product', 'quantity', 'unit_price', 'total_price'],
-      output.transaction_items.map((i) => [
-        i.trx_id,
-        i.user_id,
-        i.tier,
-        i.date,
-        i.product,
-        i.quantity,
-        i.unit_price,
-        i.total_price,
-      ])
+  const getItemCSV = () => {
+    const headers = includeTier
+      ? ['trx_id', 'user_id', 'tier', 'date', 'product', 'quantity', 'unit_price', 'total_price']
+      : ['trx_id', 'user_id', 'date', 'product', 'quantity', 'unit_price', 'total_price'];
+    const rows = output.transaction_items.map((i) =>
+      includeTier
+        ? [i.trx_id, i.user_id, i.tier, i.date, i.product, i.quantity, i.unit_price, i.total_price]
+        : [i.trx_id, i.user_id, i.date, i.product, i.quantity, i.unit_price, i.total_price]
     );
+    return generateCSV(headers, rows);
+  };
 
-  const getFunnelCSV = () =>
-    generateCSV(
-      ['session_id', 'tier', 'user_id', 'activity', 'activity_datetime'],
-      output.funnel.map((f) => [f.session_id, f.tier, f.user_id, f.activity, f.activity_datetime])
+  const getFunnelCSV = () => {
+    const headers = includeTier
+      ? ['session_id', 'tier', 'user_id', 'activity', 'activity_datetime']
+      : ['session_id', 'user_id', 'activity', 'activity_datetime'];
+    const rows = output.funnel.map((f) =>
+      includeTier
+        ? [f.session_id, f.tier, f.user_id, f.activity, f.activity_datetime]
+        : [f.session_id, f.user_id, f.activity, f.activity_datetime]
     );
+    return generateCSV(headers, rows);
+  };
 
   const getCatalogCSV = () =>
     generateCSV(
@@ -102,6 +220,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       zip.file('funnel.csv', getFunnelCSV());
       zip.file('catalog.csv', getCatalogCSV());
       zip.file('simulation_config.yaml', configYaml);
+      zip.file('README_SQL_STARTER.md', buildSqlStarterGuide(includeTier));
 
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
@@ -154,18 +273,20 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           )}
 
           {/* Master 1-Click ZIP Button */}
-          <div className={`p-4 rounded border border-inherit bg-black/5 dark:bg-white/5 flex items-center justify-between`}>
+          <div className="p-4 rounded border border-inherit bg-black/5 dark:bg-white/5 flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Complete Dataset ZIP Bundle</h3>
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.2 rounded font-mono font-medium">100% Full Export</span>
+                <span className="text-[10px] font-mono opacity-75">100% Full Export</span>
               </div>
-              <p className={`text-[11px] ${theme.mutedClass} mt-0.5`}>All 5 CSV tables plus configuration YAML without row caps or truncation.</p>
+              <p className={`text-[11px] ${theme.mutedClass} mt-0.5`}>
+                Includes all 5 CSV tables, active <span className="font-mono">simulation_config.yaml</span>, and <span className="font-mono">README_SQL_STARTER.md</span>.
+              </p>
             </div>
             <button
               onClick={downloadAllZip}
               disabled={isZipping}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded shadow-sm flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50 ${theme.accentClass}`}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded shadow-sm flex items-center gap-1.5 shrink-0 transition active:scale-95 disabled:opacity-50 ${theme.accentClass}`}
             >
               {isZipping ? <span>Zipping...</span> : (
                 <>
@@ -175,6 +296,31 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               )}
             </button>
           </div>
+
+          {/* Tier Column Visibility Toggle */}
+          <label
+            className={`p-3.5 rounded border ${theme.borderClass} flex items-start gap-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition`}
+          >
+            <input
+              type="checkbox"
+              checked={includeTier}
+              onChange={(e) => setIncludeTier(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded accent-emerald-600 shrink-0 cursor-pointer"
+            />
+            <div className="space-y-0.5 text-xs">
+              <div className="flex items-center gap-1.5 font-semibold">
+                {includeTier ? (
+                  <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <EyeOff className="w-3.5 h-3.5 opacity-60" />
+                )}
+                <span>Include internal config <span className="font-mono">tier</span> column in CSVs</span>
+              </div>
+              <p className={`text-[11px] leading-relaxed ${theme.mutedClass}`}>
+                Default hidden — <span className="font-mono">tier</span> is an internal simulation config label; real clustering algorithms (such as K-Means) discover segments from buyer behavior rather than reading preset names. Enable for learning or debugging.
+              </p>
+            </div>
+          </label>
 
           {/* Tables */}
           <div className="space-y-1.5">

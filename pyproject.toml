@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "creanu-labs"
+version = "0.1.0"
+description = "Synthetic grocery and retail analytics simulation pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pandas>=2.0",
+  "pyarrow>=14.0",
+  "pyyaml>=6.0",
+  "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+bigquery = [
+  "google-cloud-bigquery>=3.0",
+  "google-auth>=2.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["sim*"]

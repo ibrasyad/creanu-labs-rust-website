@@ -108,6 +108,10 @@ pub struct FunnelConfig {
     pub checkout: FunnelStepConfig,
     #[serde(default)]
     pub paid: FunnelStepConfig,
+    #[serde(default)]
+    pub funnel_noise: Option<NoiseConfig>,
+    #[serde(default)]
+    pub visit_hour_peak: HashMap<String, HourPeakConfig>,
 }
 
 fn default_funnel_order() -> Vec<String> {
@@ -138,6 +142,15 @@ pub struct BasketConfig {
     pub max_items: u32,
 }
 
+impl Default for BasketConfig {
+    fn default() -> Self {
+        Self {
+            min_items: default_min_items(),
+            max_items: default_max_items(),
+        }
+    }
+}
+
 fn default_min_items() -> u32 { 1 }
 fn default_max_items() -> u32 { 10 }
 
@@ -147,12 +160,28 @@ pub struct PriceVariationConfig {
     pub std_pct: f64,
 }
 
+impl Default for PriceVariationConfig {
+    fn default() -> Self {
+        Self {
+            std_pct: default_price_std_pct(),
+        }
+    }
+}
+
 fn default_price_std_pct() -> f64 { 0.05 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuantityModelConfig {
     #[serde(default = "default_base_lambda")]
     pub base_lambda: f64,
+}
+
+impl Default for QuantityModelConfig {
+    fn default() -> Self {
+        Self {
+            base_lambda: default_base_lambda(),
+        }
+    }
 }
 
 fn default_base_lambda() -> f64 { 1.5 }
@@ -167,8 +196,11 @@ pub struct SimulationSettings {
     pub reactivation_probability: f64,
     #[serde(default)]
     pub visit_chance: HashMap<String, f64>,
+    #[serde(default)]
     pub basket: BasketConfig,
+    #[serde(default)]
     pub price_variation: PriceVariationConfig,
+    #[serde(default)]
     pub quantity_model: QuantityModelConfig,
     #[serde(default)]
     pub subcategory_allow_duplicates: HashMap<String, bool>,
@@ -253,22 +285,51 @@ fn default_retry() -> u32 { 3 }
 // GROWTH & EVENT CONFIGS
 // ============================================================================
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ConversionMultiplier {
+    Scalar(f64),
+    PerStep(HashMap<String, f64>),
+}
+
+impl Default for ConversionMultiplier {
+    fn default() -> Self {
+        Self::Scalar(1.0)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GrowthMultipliers {
     #[serde(default = "default_one_f64")]
     pub new_user: f64,
     #[serde(default = "default_one_f64")]
     pub visit: f64,
-    #[serde(default = "default_one_f64")]
-    pub conversion: f64,
+    #[serde(default)]
+    pub conversion: ConversionMultiplier,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GrowthBaseConfig {
+    #[serde(default)]
+    pub overall: Option<GrowthMultipliers>,
+    #[serde(default)]
+    pub tier_profiles: HashMap<String, GrowthMultipliers>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GrowthYearlyEntry {
+    #[serde(default)]
+    pub overall: Option<GrowthMultipliers>,
+    #[serde(default)]
+    pub profile_multipliers: HashMap<String, GrowthMultipliers>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GrowthConfig {
     #[serde(default)]
-    pub base: Option<HashMap<String, GrowthMultipliers>>,
+    pub base: Option<GrowthBaseConfig>,
     #[serde(default)]
-    pub yearly: Option<HashMap<String, HashMap<String, GrowthMultipliers>>>,
+    pub yearly: Option<HashMap<String, GrowthYearlyEntry>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -326,3 +387,70 @@ impl FullSimulationConfig {
         serde_json::to_string_pretty(self)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_minimal_yaml_with_defaults_and_nested_growth_events() {
+        let sample = r#"
+simulation:
+  random_seed: 42
+date:
+  start_date: "2026-01-01"
+  end_date: "2026-01-03"
+  transaction_volume:
+    weekday_base:
+      monday: 10
+catalog:
+  vegetables:
+    leafy_greens:
+      product:
+        spinach:
+          base_price: 4000
+funnel:
+  landing_page:
+    conversion_rate: 0.5
+growth:
+  base:
+    overall:
+      new_user: 1.0
+      visit: 1.0
+    tier_profiles:
+      conservative:
+        new_user: 0.9
+        visit: 1.0
+  yearly:
+    year_1:
+      overall:
+        new_user: 1.2
+        visit: 0.9
+      profile_multipliers:
+        conservative:
+          new_user: 1.1
+          visit: 1.0
+event:
+  ab_test:
+    name: "Landing Test"
+    year: 1
+    start_month: 1
+    end_month: 3
+    profiles:
+      aggressive:
+        conversion:
+          landing_page: 1.05
+tiers:
+  family_shoppers:
+    base_user: 4
+    category_weight:
+      vegetables: 1.5
+"#;
+        let cfg = FullSimulationConfig::from_yaml(sample).expect("should parse valid YAML");
+        assert_eq!(cfg.simulation.random_seed, 42);
+        assert_eq!(cfg.simulation.basket.max_items, 10);
+        assert!(cfg.growth.is_some());
+        assert!(cfg.event.is_some());
+    }
+}
+

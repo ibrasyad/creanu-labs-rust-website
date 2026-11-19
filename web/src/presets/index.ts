@@ -82,4 +82,36 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
       }
     }),
   },
+  {
+    id: 'cafe_restock',
+    title: 'Cafe & Restaurant Daily Restock',
+    description: 'B2B hospitality buyers placing heavy weekday bulk orders for fresh produce, grains, dairy, poultry, and kitchen staples.',
+    badge: 'B2B Bulk',
+    configYaml: createPreset((cfg) => {
+      if (cfg.tiers?.small_business_owners) {
+        const sbo = cfg.tiers.small_business_owners;
+        sbo.base_user = 18;
+        sbo.daily_new_user_chance = 0.08;
+        sbo.daily_new_user_chance_weekend = 0.06;
+        sbo.basket = { min_items: 12, max_items: 22 };
+        sbo.quantity_model = { ...(sbo.quantity_model || {}), base_lambda: 1.6 };
+        if (sbo.visit_chance) {
+          sbo.visit_chance.monday = 0.24;
+          sbo.visit_chance.tuesday = 0.22;
+          sbo.visit_chance.wednesday = 0.24;
+          sbo.visit_chance.thursday = 0.22;
+          sbo.visit_chance.friday = 0.26;
+          sbo.visit_chance.saturday = 0.28;
+          sbo.visit_chance.sunday = 0.14;
+        }
+        if (sbo.category_weight) {
+          sbo.category_weight.vegetables = 2.6;
+          sbo.category_weight.grains = 3.2;
+          sbo.category_weight.dairy = 2.6;
+          sbo.category_weight.poultry = 2.8;
+          sbo.category_weight.condiments_seasonings = 3.4;
+        }
+      }
+    }),
+  },
 ];

@@ -3,7 +3,7 @@ use rand::Rng;
 use rand_distr::{Distribution, LogNormal};
 use std::collections::{HashMap, HashSet};
 
-use crate::config::{CatalogConfig, FullSimulationConfig, TierConfig};
+use crate::config::{FullSimulationConfig, TierConfig};
 use crate::models::TransactionItemRecord;
 use crate::utils::{sample_poisson, sample_triangular, weighted_choice};
 
@@ -37,7 +37,7 @@ fn is_available(
 
 /// Pick a single valid product candidate honoring cooldowns and duplicate rules
 fn pick_candidate<R: Rng>(
-    catalog: &CatalogConfig,
+    config: &FullSimulationConfig,
     tier_cfg: &TierConfig,
     user_id: &str,
     current_date: NaiveDate,
@@ -45,6 +45,7 @@ fn pick_candidate<R: Rng>(
     picked_subcategories: &HashSet<String>,
     rng: &mut R,
 ) -> Option<Candidate> {
+    let catalog = &config.catalog;
     let categories = &tier_cfg.category_weight;
     if categories.is_empty() {
         return None;
@@ -77,11 +78,12 @@ fn pick_candidate<R: Rng>(
             None => continue,
         };
 
-        // Check duplicate rule for this subcategory
+        // Check duplicate rule (tier override -> global simulation default -> true)
         let allow_duplicates = tier_cfg
             .subcategory_allow_duplicates
             .as_ref()
             .and_then(|m| m.get(&subcategory_name))
+            .or_else(|| config.simulation.subcategory_allow_duplicates.get(&subcategory_name))
             .copied()
             .unwrap_or(true);
 
@@ -163,7 +165,7 @@ pub fn generate_basket<R: Rng>(
 
     for _ in 0..target_items {
         let candidate = match pick_candidate(
-            &config.catalog,
+            config,
             tier_cfg,
             user_id,
             current_date,
@@ -217,3 +219,60 @@ pub fn generate_basket<R: Rng>(
 
     items
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha8Rng;
+
+    #[test]
+    fn enforces_cooldown_across_dates() {
+        let mut history = PurchaseHistory::new();
+        let day1 = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let day2 = NaiveDate::from_ymd_opt(2026, 1, 2).unwrap();
+        let day5 = NaiveDate::from_ymd_opt(2026, 1, 5).unwrap();
+        history.insert(("usr-000001".into(), "grains".into(), "rice".into()), day1);
+
+        assert!(!is_available(&history, "usr-000001", "grains", "rice", 3, day2));
+        assert!(is_available(&history, "usr-000001", "grains", "rice", 3, day5));
+    }
+
+    #[test]
+    fn generates_non_empty_basket_for_valid_config() {
+        let yaml = r#"
+simulation:
+  random_seed: 123
+  subcategory_allow_duplicates:
+    rice: false
+date:
+  start_date: "2026-01-01"
+  end_date: "2026-01-02"
+  transaction_volume: {}
+catalog:
+  grains:
+    rice:
+      cooldown: 1
+      product:
+        white_rice_5kg:
+          base_price: 70000
+funnel: {}
+tiers:
+  family:
+    base_user: 1
+    basket:
+      min_items: 2
+      max_items: 2
+    category_weight:
+      grains: 1.0
+"#;
+        let cfg = FullSimulationConfig::from_yaml(yaml).unwrap();
+        let tier_cfg = cfg.tiers.get("family").unwrap();
+        let mut history = PurchaseHistory::new();
+        let mut rng = ChaCha8Rng::seed_from_u64(123);
+        let d = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let items = generate_basket(&cfg, "family", tier_cfg, "usr-000001", d, "2026-01-01 10:00:00", "trx-1", &mut history, &mut rng);
+        assert_eq!(items.len(), 1);
+    }
+}
+

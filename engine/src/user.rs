@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::config::{FullSimulationConfig, TierConfig};
 use crate::models::UserRecord;
-use crate::utils::{apply_noise, get_day_of_week, get_month_name, sample_poisson, weighted_choice};
+use crate::utils::{get_day_of_week, weighted_choice};
 
 /// Fallback demographic distributions
 fn default_cities() -> HashMap<String, f64> {

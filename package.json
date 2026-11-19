@@ -1,0 +1,13 @@
+{
+  "name": "creanu-labs-workspace",
+  "private": true,
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=lettuce-melon-web",
+    "build": "npm run build --workspace=lettuce-melon-web",
+    "preview": "npm run preview --workspace=lettuce-melon-web",
+    "lint": "npm run lint --workspace=lettuce-melon-web"
+  }
+}

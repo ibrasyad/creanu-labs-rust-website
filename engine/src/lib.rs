@@ -6,17 +6,25 @@ pub mod simulation;
 pub mod user;
 pub mod utils;
 
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 use crate::config::FullSimulationConfig;
 use crate::models::SimulationOutput;
+
+fn to_js_plain<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
+    let serializer = serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true);
+    value
+        .serialize(&serializer)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}
 
 /// Validate a configuration string (either YAML or JSON).
 /// Returns parsed config summary or an error string.
 #[wasm_bindgen]
 pub fn validate_config_wasm(config_str: &str) -> Result<JsValue, JsValue> {
     let config = parse_config(config_str).map_err(|e| JsValue::from_str(&e))?;
-    serde_wasm_bindgen::to_value(&config).map_err(|e| JsValue::from_str(&e.to_string()))
+    to_js_plain(&config)
 }
 
 /// Helper to parse config from either YAML or JSON
@@ -63,7 +71,7 @@ pub fn run_simulation_wasm(
     )
     .map_err(|e| JsValue::from_str(&e))?;
 
-    serde_wasm_bindgen::to_value(&output).map_err(|e| JsValue::from_str(&e.to_string()))
+    to_js_plain(&output)
 }
 
 /// Convert specific dataset in memory to CSV string format

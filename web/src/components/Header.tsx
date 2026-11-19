@@ -1,5 +1,5 @@
-import React from 'react';
-import { Play, Download, Sparkles, Sliders, BarChart3, Code, Sun, Moon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Download, Sparkles, Sliders, BarChart3, Code, Sun, Moon, Info, Share2, Check } from 'lucide-react';
 import { PRESET_SCENARIOS } from '../presets';
 import { ThemeConfig } from '../types/theme';
 
@@ -9,9 +9,10 @@ interface HeaderProps {
   isRunning: boolean;
   onRunSimulation: () => void;
   onOpenExport: () => void;
+  onCopyShareLink: () => Promise<boolean> | boolean;
   hasOutput: boolean;
-  activeTab: 'studio' | 'dashboard' | 'yaml';
-  onChangeTab: (tab: 'studio' | 'dashboard' | 'yaml') => void;
+  activeTab: 'studio' | 'dashboard' | 'yaml' | 'about';
+  onChangeTab: (tab: 'studio' | 'dashboard' | 'yaml' | 'about') => void;
   theme: ThemeConfig;
   onToggleThemeMode: () => void;
 }
@@ -22,12 +23,23 @@ export const Header: React.FC<HeaderProps> = ({
   isRunning,
   onRunSimulation,
   onOpenExport,
+  onCopyShareLink,
   hasOutput,
   activeTab,
   onChangeTab,
   theme,
   onToggleThemeMode,
 }) => {
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleShareClick = async () => {
+    const ok = await onCopyShareLink();
+    if (ok) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
   return (
     <header className={`border-b ${theme.headerClass} sticky top-0 z-30 px-6 py-3 transition-colors duration-150`}>
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -78,6 +90,16 @@ export const Header: React.FC<HeaderProps> = ({
               <Code className="w-3.5 h-3.5" />
               <span>Raw YAML</span>
             </button>
+
+            <button
+              onClick={() => onChangeTab('about')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                activeTab === 'about' ? theme.accentClass : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>About</span>
+            </button>
           </nav>
         </div>
 
@@ -111,6 +133,25 @@ export const Header: React.FC<HeaderProps> = ({
               ))}
             </select>
           </div>
+
+          {/* Share Link Button */}
+          <button
+            onClick={handleShareClick}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition ${theme.buttonClass}`}
+            title="Copy shareable scenario URL"
+          >
+            {copiedLink ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
+              </>
+            )}
+          </button>
 
           {/* Run Button */}
           <button

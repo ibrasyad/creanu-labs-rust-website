@@ -76,11 +76,11 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
     }
   };
 
-  // Quick Date Presets (7d, 14d, 30d, 90d)
+  // Quick Date Presets (7d, 14d, 30d, 90d, 180d)
   const setQuickDateRange = (days: number) => {
     const start = new Date(parsedConfig?.date?.start_date || '2026-01-01');
     const end = new Date(start);
-    end.setDate(start.getDate() + days - 1);
+    end.setUTCDate(start.getUTCDate() + days - 1);
     const endStr = end.toISOString().slice(0, 10);
     updateField(['date', 'end_date'], endStr);
   };

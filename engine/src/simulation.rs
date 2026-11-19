@@ -1,6 +1,6 @@
 use chrono::{Duration, NaiveDate};
+use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use rand_core::SeedableRng;
 use std::collections::HashMap;
 
 use crate::basket::{generate_basket, PurchaseHistory};
@@ -55,6 +55,16 @@ pub fn run_simulation(
     }
 
     let total_days = (end_date - start_date).num_days() as usize + 1;
+
+    // Build product -> category lookup so category_revenue tracks real grocery categories
+    let mut product_category_map: HashMap<String, String> = HashMap::new();
+    for (cat_name, subcats) in &config.catalog {
+        for subcat in subcats.values() {
+            for prod_name in subcat.product.keys() {
+                product_category_map.insert(prod_name.clone(), cat_name.clone());
+            }
+        }
+    }
 
     // 1. Initialize base users
     let mut init_rng = ChaCha8Rng::seed_from_u64(base_seed);
@@ -169,8 +179,10 @@ pub fn run_simulation(
                                 entry.0 += item.quantity as u64;
                                 entry.1 += item.total_price;
 
-                                // Track category stats
-                                *category_revenue.entry(item.tier.clone()).or_insert(0.0) += item.total_price;
+                                // Track category stats using catalog category
+                                if let Some(cat_name) = product_category_map.get(&item.product) {
+                                    *category_revenue.entry(cat_name.clone()).or_insert(0.0) += item.total_price;
+                                }
                             }
 
                             all_transactions.push(TransactionRecord {
@@ -278,3 +290,60 @@ impl EmptyOrZero for Vec<TransactionItemRecord> {
         self.is_empty() || self.iter().all(|it| it.quantity == 0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn simulation_is_deterministic_and_tracks_category_revenue() {
+        let yaml = r#"
+simulation:
+  random_seed: 20260101
+date:
+  start_date: "2026-01-01"
+  end_date: "2026-01-05"
+  transaction_volume: {}
+catalog:
+  vegetables:
+    leafy_greens:
+      cooldown: 0
+      product:
+        spinach:
+          base_price: 4000
+funnel:
+  landing_page:
+    conversion_rate: 1.0
+  product_view:
+    conversion_rate: 1.0
+  add_to_cart:
+    conversion_rate: 1.0
+  checkout:
+    conversion_rate: 1.0
+  paid:
+    conversion_rate: 1.0
+tiers:
+  family_shoppers:
+    base_user: 10
+    visit_chance:
+      monday: 1.0
+      tuesday: 1.0
+      wednesday: 1.0
+      thursday: 1.0
+      friday: 1.0
+      saturday: 1.0
+      sunday: 1.0
+    category_weight:
+      vegetables: 1.0
+"#;
+        let cfg = FullSimulationConfig::from_yaml(yaml).unwrap();
+        let out1 = run_simulation(&cfg, None, None, None, None).unwrap();
+        let out2 = run_simulation(&cfg, None, None, None, None).unwrap();
+        assert_eq!(out1.summary.daily_metrics.len(), 5);
+        assert_eq!(out1.transactions.len(), out2.transactions.len());
+        assert!((out1.summary.total_revenue - out2.summary.total_revenue).abs() < 1e-6);
+        assert!(out1.summary.category_revenue.contains_key("vegetables"));
+        assert!(!out1.summary.category_revenue.contains_key("family_shoppers"));
+    }
+}
+
