@@ -146,3 +146,7 @@ Thumbs.db
 
 # Keep the output directory but ignore its contents
 # Create output/.gitkeep if you want to track the directory
+
+# Local AI knowledge graph / indexing artifacts (e.g. Graphify)
+graphify-out/
+GRAPH_REPORT.md
