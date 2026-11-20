@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Play, Download, Sparkles, Sliders, BarChart3, Code, Sun, Moon, Info, Share2, Check } from 'lucide-react';
 import { PRESET_SCENARIOS } from '../presets';
 import { ThemeConfig } from '../types/theme';
+import { SITE_CONTENT } from '../content/siteContent';
+import { BrandMark } from './BrandMark';
 
 interface HeaderProps {
   currentPresetId: string;
@@ -46,10 +48,8 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand & Primary Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between lg:justify-start gap-3 xl:gap-5 min-w-0">
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white text-base shadow-sm shrink-0">
-              🥬
-            </div>
-            <span className="font-bold text-sm tracking-tight whitespace-nowrap">Creanu Labs</span>
+            <BrandMark className="h-8 w-8" />
+            <span className="font-bold text-sm tracking-tight whitespace-nowrap">{SITE_CONTENT.brand.name}</span>
           </div>
 
           {/* Primary View Tabs */}
@@ -61,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Sliders className="w-3.5 h-3.5 shrink-0" />
-              <span>Config Studio</span>
+              <span>{SITE_CONTENT.nav.studio}</span>
             </button>
 
             <button
@@ -71,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-              <span>Analytics Dashboard</span>
+              <span>{SITE_CONTENT.nav.dashboard}</span>
             </button>
 
             <button
@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Code className="w-3.5 h-3.5 shrink-0" />
-              <span>Raw YAML</span>
+              <span>{SITE_CONTENT.nav.yaml}</span>
             </button>
 
             <button
@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Info className="w-3.5 h-3.5 shrink-0" />
-              <span>About</span>
+              <span>{SITE_CONTENT.nav.about}</span>
             </button>
           </nav>
         </div>

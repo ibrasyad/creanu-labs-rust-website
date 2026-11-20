@@ -29,10 +29,10 @@ function commandExists(command, args = ['--version']) {
   return result.status === 0;
 }
 
-console.log('[creanu-build] Step 1/3: Bundling YAML config defaults...');
+console.log('[grocerylab-build] Step 1/3: Bundling YAML config defaults...');
 runChecked('node', [path.join(webDir, 'scripts/bundleConfig.cjs')], webDir);
 
-console.log('[creanu-build] Step 2/3: Checking Rust/WebAssembly toolchain...');
+console.log('[grocerylab-build] Step 2/3: Checking Rust/WebAssembly toolchain...');
 const hasEngineCargo = fs.existsSync(path.join(engineDir, 'Cargo.toml'));
 const hasCargo = commandExists('cargo');
 const hasWasmPack = commandExists('wasm-pack');
@@ -55,6 +55,6 @@ if (hasEngineCargo && hasCargo && hasWasmPack) {
   );
 }
 
-console.log('[creanu-build] Step 3/3: Compiling TypeScript & building Vite assets...');
+console.log('[grocerylab-build] Step 3/3: Compiling TypeScript & building Vite assets...');
 runChecked('npm', ['run', 'build'], webDir);
-console.log('[creanu-build] Build complete! Ready for `npx wrangler deploy`.');
+console.log('[grocerylab-build] Build complete! Ready for `npx wrangler deploy`.');

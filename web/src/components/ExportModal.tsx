@@ -13,14 +13,14 @@ interface ExportModalProps {
   theme: ThemeConfig;
 }
 
-function buildSqlStarterGuide(includeTier: boolean): string {
-  const tierNote = includeTier
-    ? 'This bundle was exported with the optional `tier` column enabled for learning and debugging.'
-    : 'By default, `tier` is omitted from CSV exports so ML/clustering exercises (such as K-Means or RFM) cannot leak config persona names as an answer key. Re-enable "Include config `tier` column" in Export Settings if needed.';
+function buildSqlStarterGuide(includePersona: boolean): string {
+  const personaNote = includePersona
+    ? 'This bundle was exported with the optional `persona` column enabled for learning and debugging.'
+    : 'By default, `persona` is omitted from CSV exports so ML/clustering exercises (such as K-Means or RFM) cannot leak config persona names as an answer key. Re-enable "Include config `persona` column" in Export Settings if needed.';
 
-  return `# Creanu Labs — SQL & Analytics Starter Pack
+  return `# GroceryLab — SQL & Analytics Starter Pack
 
-${tierNote}
+${personaNote}
 
 Load all five CSV files (\`user.csv\`, \`funnel.csv\`, \`transaction.csv\`, \`transaction_item.csv\`, \`catalog.csv\`) into **DuckDB** or **PostgreSQL**, then start with the queries below.
 
@@ -132,7 +132,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 }) => {
   const [isZipping, setIsZipping] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
-  const [includeTier, setIncludeTier] = useState(false);
+  const [includePersona, setIncludePersona] = useState(false);
 
   if (!isOpen || !output) return null;
 
@@ -143,48 +143,48 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   const getUserCSV = () => {
-    const headers = includeTier
-      ? ['tier', 'user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date']
+    const headers = includePersona
+      ? ['persona', 'user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date']
       : ['user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date'];
     const rows = output.users.map((u) =>
-      includeTier
-        ? [u.tier, u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date]
+      includePersona
+        ? [u.persona, u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date]
         : [u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date]
     );
     return generateCSV(headers, rows);
   };
 
   const getTrxCSV = () => {
-    const headers = includeTier
-      ? ['session_id', 'user_id', 'trx_id', 'date', 'tier', 'total_price']
+    const headers = includePersona
+      ? ['session_id', 'user_id', 'trx_id', 'date', 'persona', 'total_price']
       : ['session_id', 'user_id', 'trx_id', 'date', 'total_price'];
     const rows = output.transactions.map((t) =>
-      includeTier
-        ? [t.session_id, t.user_id, t.trx_id, t.date, t.tier, t.total_price]
+      includePersona
+        ? [t.session_id, t.user_id, t.trx_id, t.date, t.persona, t.total_price]
         : [t.session_id, t.user_id, t.trx_id, t.date, t.total_price]
     );
     return generateCSV(headers, rows);
   };
 
   const getItemCSV = () => {
-    const headers = includeTier
-      ? ['trx_id', 'user_id', 'tier', 'date', 'product', 'quantity', 'unit_price', 'total_price']
+    const headers = includePersona
+      ? ['trx_id', 'user_id', 'persona', 'date', 'product', 'quantity', 'unit_price', 'total_price']
       : ['trx_id', 'user_id', 'date', 'product', 'quantity', 'unit_price', 'total_price'];
     const rows = output.transaction_items.map((i) =>
-      includeTier
-        ? [i.trx_id, i.user_id, i.tier, i.date, i.product, i.quantity, i.unit_price, i.total_price]
+      includePersona
+        ? [i.trx_id, i.user_id, i.persona, i.date, i.product, i.quantity, i.unit_price, i.total_price]
         : [i.trx_id, i.user_id, i.date, i.product, i.quantity, i.unit_price, i.total_price]
     );
     return generateCSV(headers, rows);
   };
 
   const getFunnelCSV = () => {
-    const headers = includeTier
-      ? ['session_id', 'tier', 'user_id', 'activity', 'activity_datetime']
+    const headers = includePersona
+      ? ['session_id', 'persona', 'user_id', 'activity', 'activity_datetime']
       : ['session_id', 'user_id', 'activity', 'activity_datetime'];
     const rows = output.funnel.map((f) =>
-      includeTier
-        ? [f.session_id, f.tier, f.user_id, f.activity, f.activity_datetime]
+      includePersona
+        ? [f.session_id, f.persona, f.user_id, f.activity, f.activity_datetime]
         : [f.session_id, f.user_id, f.activity, f.activity_datetime]
     );
     return generateCSV(headers, rows);
@@ -220,13 +220,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       zip.file('funnel.csv', getFunnelCSV());
       zip.file('catalog.csv', getCatalogCSV());
       zip.file('simulation_config.yaml', configYaml);
-      zip.file('README_SQL_STARTER.md', buildSqlStarterGuide(includeTier));
+      zip.file('README_SQL_STARTER.md', buildSqlStarterGuide(includePersona));
 
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `creanu-labs-dataset-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.download = `grocerylab-dataset-${new Date().toISOString().slice(0, 10)}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -297,27 +297,27 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             </button>
           </div>
 
-          {/* Tier Column Visibility Toggle */}
+          {/* Persona Column Visibility Toggle */}
           <label
             className={`p-3.5 rounded border ${theme.borderClass} flex items-start gap-3 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition`}
           >
             <input
               type="checkbox"
-              checked={includeTier}
-              onChange={(e) => setIncludeTier(e.target.checked)}
+              checked={includePersona}
+              onChange={(e) => setIncludePersona(e.target.checked)}
               className="mt-0.5 h-4 w-4 rounded accent-emerald-600 shrink-0 cursor-pointer"
             />
             <div className="space-y-0.5 text-xs">
               <div className="flex items-center gap-1.5 font-semibold">
-                {includeTier ? (
+                {includePersona ? (
                   <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                   <EyeOff className="w-3.5 h-3.5 opacity-60" />
                 )}
-                <span>Include internal config <span className="font-mono">tier</span> column in CSVs</span>
+                <span>Include internal config <span className="font-mono">persona</span> column in CSVs</span>
               </div>
               <p className={`text-[11px] leading-relaxed ${theme.mutedClass}`}>
-                Default hidden — <span className="font-mono">tier</span> is an internal simulation config label; real clustering algorithms (such as K-Means) discover segments from buyer behavior rather than reading preset names. Enable for learning or debugging.
+                Default hidden — <span className="font-mono">persona</span> is an internal simulation config label; real clustering algorithms (such as K-Means) discover segments from buyer behavior rather than reading preset names. Enable for learning or debugging.
               </p>
             </div>
           </label>

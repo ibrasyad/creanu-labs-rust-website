@@ -3,7 +3,7 @@ use rand::Rng;
 use rand_distr::{Distribution, LogNormal};
 use std::collections::{HashMap, HashSet};
 
-use crate::config::{FullSimulationConfig, TierConfig};
+use crate::config::{FullSimulationConfig, PersonaConfig};
 use crate::models::TransactionItemRecord;
 use crate::utils::{sample_poisson, sample_triangular, weighted_choice};
 
@@ -38,7 +38,7 @@ fn is_available(
 /// Pick a single valid product candidate honoring cooldowns and duplicate rules
 fn pick_candidate<R: Rng>(
     config: &FullSimulationConfig,
-    tier_cfg: &TierConfig,
+    persona_cfg: &PersonaConfig,
     user_id: &str,
     current_date: NaiveDate,
     history: &PurchaseHistory,
@@ -46,7 +46,7 @@ fn pick_candidate<R: Rng>(
     rng: &mut R,
 ) -> Option<Candidate> {
     let catalog = &config.catalog;
-    let categories = &tier_cfg.category_weight;
+    let categories = &persona_cfg.category_weight;
     if categories.is_empty() {
         return None;
     }
@@ -66,7 +66,7 @@ fn pick_candidate<R: Rng>(
         }
 
         // Subcategory choice
-        let subcategory_name = if let Some(sub_weights) = tier_cfg.subcategory_weight.as_ref().and_then(|w| w.get(category)) {
+        let subcategory_name = if let Some(sub_weights) = persona_cfg.subcategory_weight.as_ref().and_then(|w| w.get(category)) {
             weighted_choice(sub_weights, rng).cloned()
         } else {
             let mut names: Vec<&String> = subcategories.keys().collect();
@@ -79,8 +79,8 @@ fn pick_candidate<R: Rng>(
             None => continue,
         };
 
-        // Check duplicate rule (tier override -> global simulation default -> true)
-        let allow_duplicates = tier_cfg
+        // Check duplicate rule (persona override -> global simulation default -> true)
+        let allow_duplicates = persona_cfg
             .subcategory_allow_duplicates
             .as_ref()
             .and_then(|m| m.get(&subcategory_name))
@@ -135,8 +135,8 @@ fn pick_candidate<R: Rng>(
 /// Generate a complete basket of items for a paid transaction
 pub fn generate_basket<R: Rng>(
     config: &FullSimulationConfig,
-    tier_name: &str,
-    tier_cfg: &TierConfig,
+    persona_name: &str,
+    persona_cfg: &PersonaConfig,
     user_id: &str,
     current_date: NaiveDate,
     activity_datetime: &str,
@@ -144,7 +144,7 @@ pub fn generate_basket<R: Rng>(
     history: &mut PurchaseHistory,
     rng: &mut R,
 ) -> Vec<TransactionItemRecord> {
-    let basket_cfg = tier_cfg.basket.as_ref().unwrap_or(&config.simulation.basket);
+    let basket_cfg = persona_cfg.basket.as_ref().unwrap_or(&config.simulation.basket);
     let min_items = basket_cfg.min_items as f64;
     let max_items = basket_cfg.max_items as f64;
     let mode = (min_items + max_items) / 2.0;
@@ -155,7 +155,7 @@ pub fn generate_basket<R: Rng>(
     let mut items = Vec::new();
     let mut picked_subcategories = HashSet::new();
 
-    let base_lambda = tier_cfg
+    let base_lambda = persona_cfg
         .quantity_model
         .as_ref()
         .map(|q| q.base_lambda)
@@ -167,7 +167,7 @@ pub fn generate_basket<R: Rng>(
     for _ in 0..target_items {
         let candidate = match pick_candidate(
             config,
-            tier_cfg,
+            persona_cfg,
             user_id,
             current_date,
             history,
@@ -179,7 +179,7 @@ pub fn generate_basket<R: Rng>(
         };
 
         // Quantity calculation
-        let bias = tier_cfg
+        let bias = persona_cfg
             .quantity_bias
             .as_ref()
             .and_then(|b| b.get(&candidate.category))
@@ -204,7 +204,7 @@ pub fn generate_basket<R: Rng>(
         items.push(TransactionItemRecord {
             trx_id: trx_id.to_string(),
             user_id: user_id.to_string(),
-            tier: tier_name.to_string(),
+            persona: persona_name.to_string(),
             date: activity_datetime.to_string(),
             product: candidate.product_name,
             quantity,
@@ -258,7 +258,7 @@ catalog:
         white_rice_5kg:
           base_price: 70000
 funnel: {}
-tiers:
+personas:
   family:
     base_user: 1
     basket:
@@ -268,11 +268,11 @@ tiers:
       grains: 1.0
 "#;
         let cfg = FullSimulationConfig::from_yaml(yaml).unwrap();
-        let tier_cfg = cfg.tiers.get("family").unwrap();
+        let persona_cfg = cfg.personas.get("family").unwrap();
         let mut history = PurchaseHistory::new();
         let mut rng = ChaCha8Rng::seed_from_u64(123);
         let d = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        let items = generate_basket(&cfg, "family", tier_cfg, "usr-000001", d, "2026-01-01 10:00:00", "trx-1", &mut history, &mut rng);
+        let items = generate_basket(&cfg, "family", persona_cfg, "usr-000001", d, "2026-01-01 10:00:00", "trx-1", &mut history, &mut rng);
         assert_eq!(items.len(), 1);
     }
 }

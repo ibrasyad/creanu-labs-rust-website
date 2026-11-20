@@ -377,7 +377,7 @@ export const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
             </span>
           </div>
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
               <BarChart data={funnelData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGridColor} vertical={false} />
                 <XAxis dataKey="stage" tick={{ fill: theme.chartTickColor, fontSize: 10 }} />
@@ -463,7 +463,7 @@ export const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
           </div>
 
           <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
               <LineChart data={aggregatedComparisonData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGridColor} />
                 <XAxis dataKey="label" tick={{ fill: theme.chartTickColor, fontSize: 9 }} />
@@ -524,7 +524,7 @@ export const SummaryDashboard: React.FC<SummaryDashboardProps> = ({
               <span className="text-[11px] font-mono opacity-75 capitalize">{interval} delta</span>
             </div>
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                 <BarChart data={aggregatedComparisonData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.chartGridColor} vertical={false} />
                   <XAxis dataKey="label" tick={{ fill: theme.chartTickColor, fontSize: 9 }} />

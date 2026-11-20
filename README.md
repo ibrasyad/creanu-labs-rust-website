@@ -18,11 +18,11 @@ I built this with Python using pandas for data manipulation, scipy for statistic
 
 The system generates multiple interconnected datasets:
 
-- **Transaction headers** with session metadata and customer tier
+- **Transaction headers** with session metadata and customer persona
 - **Transaction items** with detailed product line items, quantities, and pricing
 - **User analytics** tracking acquisition dates, transaction history, and total spending
 - **Funnel data** for customer journey analysis and conversion tracking
-- **Daily new user acquisition** with tier distribution
+- **Daily new user acquisition** with persona distribution
 
 All data is output as Parquet files for efficient storage and fast querying. Ideally, I would like to connect this to a database, but I don't want to spend any cost on this project, so I'll leave it as is using free tools for now
 

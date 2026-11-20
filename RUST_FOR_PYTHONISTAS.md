@@ -14,7 +14,7 @@ In Python, configurations and data rows are loose dictionaries:
 # Python
 user = {
     "user_id": "usr-000001",
-    "tier": "family_shoppers",
+    "persona": "family_shoppers",
     "city": "Jakarta",
     "registered_date": "2023-01-01"
 }
@@ -25,7 +25,7 @@ In Rust, we give data a fixed shape using a `struct`. With the `#[derive(Seriali
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRecord {
     pub user_id: String,
-    pub tier: String,
+    pub persona: String,
     pub city: String,
     pub registered_date: String,
 }
@@ -38,14 +38,14 @@ pub struct UserRecord {
 In Python:
 ```python
 # Python
-active_names = [u["user_id"] for u in users if u["tier"] == "family_shoppers"]
+active_names = [u["user_id"] for u in users if u["persona"] == "family_shoppers"]
 ```
 In Rust:
 ```rust
 // Rust
 let active_names: Vec<String> = users
     .iter()
-    .filter(|u| u.tier == "family_shoppers")
+    .filter(|u| u.persona == "family_shoppers")
     .map(|u| u.user_id.clone())
     .collect();
 ```
@@ -140,12 +140,12 @@ Here is where every part of your simulation lives in Rust:
 
 | Feature | Python Module | Rust Module |
 | :--- | :--- | :--- |
-| **Catalog, Tiers, Dates Configs** | `sim/config.py` | `engine/src/config.rs` |
-| **User & Lifecycle Generation** | `sim/generate_user.py` | `engine/src/user.rs` |
-| **Basket, Pricing & Cooldowns** | `sim/generate_basket.py` | `engine/src/basket.rs` |
-| **Conversion Funnel & Peak Hours**| `sim/generate_funnel.py` | `engine/src/funnel.rs` |
-| **Simulation Loop & Day Iteration**| `generate.py` | `engine/src/simulation.rs` |
-| **Random Utilities & Seeding** | `sim/utils.py` | `engine/src/utils.rs` |
+| **Catalog, Personas, Dates Configs** | `archive/sim/config.py` | `engine/src/config.rs` |
+| **User & Lifecycle Generation** | `archive/sim/generate_user.py` | `engine/src/user.rs` |
+| **Basket, Pricing & Cooldowns** | `archive/sim/generate_basket.py` | `engine/src/basket.rs` |
+| **Conversion Funnel & Peak Hours**| `archive/sim/generate_funnel.py` | `engine/src/funnel.rs` |
+| **Simulation Loop & Day Iteration**| `archive/generate.py` | `engine/src/simulation.rs` |
+| **Random Utilities & Seeding** | `archive/sim/utils.py` | `engine/src/utils.rs` |
 | **WebAssembly Browser Bridge** | *(New for Web)* | `engine/src/lib.rs` |
 
 ---

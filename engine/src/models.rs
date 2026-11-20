@@ -4,7 +4,7 @@ use std::collections::HashMap;
 /// A customer record in the simulation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRecord {
-    pub tier: String,
+    pub persona: String,
     pub user_id: String,
     pub city: String,
     pub gender: String,
@@ -17,7 +17,7 @@ pub struct UserRecord {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FunnelEventRecord {
     pub session_id: String,
-    pub tier: String,
+    pub persona: String,
     pub user_id: String,
     pub activity: String,
     pub activity_datetime: String,
@@ -30,7 +30,7 @@ pub struct TransactionRecord {
     pub user_id: String,
     pub trx_id: String,
     pub date: String,
-    pub tier: String,
+    pub persona: String,
     pub total_price: f64,
 }
 
@@ -39,7 +39,7 @@ pub struct TransactionRecord {
 pub struct TransactionItemRecord {
     pub trx_id: String,
     pub user_id: String,
-    pub tier: String,
+    pub persona: String,
     pub date: String,
     pub product: String,
     pub quantity: u32,

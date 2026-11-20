@@ -13,6 +13,7 @@ import { EngineKind, WorkerProgressPhase } from './engine/workerProtocol';
 import { SimulationOutput } from './types/simulation';
 import { ThemeMode, SWISS_THEMES } from './types/theme';
 import { buildShareUrl, hydrateScenarioFromUrl } from './utils/shareUrl';
+import { SITE_CONTENT } from './content/siteContent';
 import { Sparkles, BarChart2, AlertCircle, X } from 'lucide-react';
 import * as yaml from 'js-yaml';
 
@@ -379,12 +380,12 @@ export function App() {
 
       {/* Footer */}
       <footer className={`border-t ${theme.borderClass} py-3.5 px-6 text-center text-xs ${theme.mutedClass} flex flex-wrap items-center justify-center gap-x-2 gap-y-1`}>
-        <span>Creanu Labs Synthetic Commerce Engine</span>
+        <span>{SITE_CONTENT.brand.footerLabel}</span>
         <span aria-hidden="true">&middot;</span>
         <span>Swiss Design ({theme.name})</span>
         <span aria-hidden="true">&middot;</span>
         <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-          <Sparkles className="w-3 h-3" /> Zero Server Compute Cost
+          <Sparkles className="w-3 h-3" /> {SITE_CONTENT.brand.zeroComputeLabel}
         </span>
       </footer>
     </div>

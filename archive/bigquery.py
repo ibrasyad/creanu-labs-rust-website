@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 from google.cloud import bigquery
 from google.oauth2 import service_account
 
-COLUMN_TO_DROP = "tier"
+COLUMN_TO_DROP = "persona"
 
 SCHEMAS = {
     "catalog": [bigquery.SchemaField("category", "STRING", mode="REQUIRED"), bigquery.SchemaField("subcategory", "STRING", mode="REQUIRED"), bigquery.SchemaField("product", "STRING", mode="REQUIRED"), bigquery.SchemaField("base_price", "INTEGER", mode="REQUIRED")],
@@ -28,7 +28,8 @@ def main():
     project_id, dataset_id = os.environ["BIGQUERY_PROJECT_ID"], os.environ["BIGQUERY_DATASET_ID"]
     credentials = service_account.Credentials.from_service_account_info(json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT"]))
     client = bigquery.Client(project=project_id, credentials=credentials)
-    for file in Path(os.getenv("OUTPUT_DIR", "output")).glob("*.parquet"):
+    default_output_dir = Path(__file__).resolve().parent / "output"
+    for file in Path(os.getenv("OUTPUT_DIR", str(default_output_dir))).glob("*.parquet"):
         if file.name.startswith("_"):
             continue
         table_name = file.stem

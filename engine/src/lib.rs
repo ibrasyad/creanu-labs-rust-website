@@ -84,38 +84,38 @@ pub fn export_table_csv(dataset_name: &str, output_js: JsValue) -> Result<String
 
     match dataset_name {
         "users" => {
-            csv.push_str("tier,user_id,city,gender,acquisition_channel,registered_date,last_active_date\n");
+            csv.push_str("persona,user_id,city,gender,acquisition_channel,registered_date,last_active_date\n");
             for u in output.users {
                 csv.push_str(&format!(
                     "{},{},{},{},{},{},{}\n",
-                    u.tier, u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date
+                    u.persona, u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date
                 ));
             }
         }
         "transactions" => {
-            csv.push_str("session_id,user_id,trx_id,date,tier,total_price\n");
+            csv.push_str("session_id,user_id,trx_id,date,persona,total_price\n");
             for t in output.transactions {
                 csv.push_str(&format!(
                     "{},{},{},{},{},{:.2}\n",
-                    t.session_id, t.user_id, t.trx_id, t.date, t.tier, t.total_price
+                    t.session_id, t.user_id, t.trx_id, t.date, t.persona, t.total_price
                 ));
             }
         }
         "transaction_items" => {
-            csv.push_str("trx_id,user_id,tier,date,product,quantity,unit_price,total_price\n");
+            csv.push_str("trx_id,user_id,persona,date,product,quantity,unit_price,total_price\n");
             for it in output.transaction_items {
                 csv.push_str(&format!(
                     "{},{},{},{},{},{},{:.2},{:.2}\n",
-                    it.trx_id, it.user_id, it.tier, it.date, it.product, it.quantity, it.unit_price, it.total_price
+                    it.trx_id, it.user_id, it.persona, it.date, it.product, it.quantity, it.unit_price, it.total_price
                 ));
             }
         }
         "funnel" => {
-            csv.push_str("session_id,tier,user_id,activity,activity_datetime\n");
+            csv.push_str("session_id,persona,user_id,activity,activity_datetime\n");
             for f in output.funnel {
                 csv.push_str(&format!(
                     "{},{},{},{},{}\n",
-                    f.session_id, f.tier, f.user_id, f.activity, f.activity_datetime
+                    f.session_id, f.persona, f.user_id, f.activity, f.activity_datetime
                 ));
             }
         }

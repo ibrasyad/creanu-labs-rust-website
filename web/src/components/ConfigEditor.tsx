@@ -17,7 +17,7 @@ import {
   Gauge,
 } from 'lucide-react';
 import { ThemeConfig } from '../types/theme';
-import { TiersPanel } from './config/TiersPanel';
+import { PersonasPanel } from './config/PersonasPanel';
 import { CatalogPanel } from './config/CatalogPanel';
 import { SeasonalityPanel } from './config/SeasonalityPanel';
 import { EventsPanel } from './config/EventsPanel';
@@ -29,7 +29,7 @@ interface ConfigEditorProps {
   theme: ThemeConfig;
 }
 
-type AdvancedTab = 'tiers' | 'catalog' | 'seasonality' | 'funnel' | 'events' | 'growth';
+type AdvancedTab = 'personas' | 'catalog' | 'seasonality' | 'funnel' | 'events' | 'growth';
 
 export const ConfigEditor: React.FC<ConfigEditorProps> = ({
   yamlContent,
@@ -37,8 +37,8 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
   theme,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [activeAdvancedTab, setActiveAdvancedTab] = useState<AdvancedTab>('tiers');
-  const [selectedTimingTier, setSelectedTimingTier] = useState('');
+  const [activeAdvancedTab, setActiveAdvancedTab] = useState<AdvancedTab>('personas');
+  const [selectedTimingPersona, setSelectedTimingPersona] = useState('');
 
   // Parse YAML for structured controls
   let parsedConfig: any = null;
@@ -145,10 +145,10 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
 
   const startDateStr = parsedConfig.date?.start_date || '2026-01-01';
   const endDateStr = parsedConfig.date?.end_date || '2026-03-31';
-  const timingTierKey = parsedConfig.tiers?.[selectedTimingTier]
-    ? selectedTimingTier
-    : Object.keys(parsedConfig.tiers || {})[0] || '';
-  const timingTier = parsedConfig.tiers?.[timingTierKey] || {};
+  const timingPersonaKey = parsedConfig.personas?.[selectedTimingPersona]
+    ? selectedTimingPersona
+    : Object.keys(parsedConfig.personas || {})[0] || '';
+  const timingPersona = parsedConfig.personas?.[timingPersonaKey] || {};
 
   const daysDiff = Math.max(
     1,
@@ -240,7 +240,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             </div>
           </div>
 
-          {/* Card 2: Global Behavior Multipliers (Affects All Tiers) */}
+          {/* Card 2: Global Behavior Multipliers (Affects All Personas) */}
           <div className="space-y-3.5">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
               <Gauge className="w-3.5 h-3.5 opacity-70" />
@@ -296,7 +296,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             ))}
 
             <p className={`text-[11px] ${theme.mutedClass}`}>
-              Multiplies all customer tiers on top of tier-level rates (1.0x = baseline).
+              Multiplies all customer personas on top of persona-level rates (1.0x = baseline).
             </p>
           </div>
 
@@ -399,7 +399,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             </div>
 
             <p className={`text-[11px] ${theme.mutedClass}`}>
-              Global settings with no tier-level overrides.
+              Global settings with no persona-level overrides.
             </p>
           </div>
         </div>
@@ -414,7 +414,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             <span>
               {showAdvanced
                 ? 'Hide Complete Engine Parameters'
-                : 'Show Complete Engine Parameters (Tiers, Catalog, Seasonality, Events, Growth)'}
+                : 'Show Complete Engine Parameters (Personas, Catalog, Seasonality, Events, Growth)'}
             </span>
             {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
@@ -436,7 +436,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded border border-inherit text-xs flex-wrap">
               {(
                 [
-                  { id: 'tiers', label: `Customer Tiers (${Object.keys(parsedConfig.tiers || {}).length})` },
+                  { id: 'personas', label: `Customer Personas (${Object.keys(parsedConfig.personas || {}).length})` },
                   { id: 'catalog', label: `Catalog (${Object.keys(parsedConfig.catalog || {}).length})` },
                   { id: 'seasonality', label: 'Seasonality & Rules' },
                   { id: 'funnel', label: 'Funnel & Traffic' },
@@ -457,9 +457,9 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
             </div>
           </div>
 
-          {/* Sub-Tab 1: Customer Tiers Deep Dive */}
-          {activeAdvancedTab === 'tiers' && (
-            <TiersPanel
+          {/* Sub-Tab 1: Customer Personas Deep Dive */}
+          {activeAdvancedTab === 'personas' && (
+            <PersonasPanel
               parsedConfig={parsedConfig}
               updateField={updateField}
               mutateConfig={mutateConfig}
@@ -496,7 +496,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                     Fallback Funnel Conversion Rates (funnel.yaml)
                   </h4>
                   <p className={`text-[11px] ${theme.mutedClass}`}>
-                    Used only when a customer tier does not define its own conversion rate for that stage.
+                    Used only when a customer persona does not define its own conversion rate for that stage.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
@@ -535,7 +535,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <p className={`text-xs ${theme.mutedClass}`}>
-                    Global stage timing defaults. Tier-specific values can override these settings below.
+                    Global stage timing defaults. Persona-specific values can override these settings below.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
@@ -588,31 +588,31 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 </div>
               </div>
 
-              {/* Tier-specific timing overrides */}
-              {Object.keys(parsedConfig.tiers || {}).length > 0 && (
+              {/* Persona-specific timing overrides */}
+              {Object.keys(parsedConfig.personas || {}).length > 0 && (
                 <div className="space-y-3 pt-4 border-t border-inherit">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h4 className="text-xs font-bold uppercase tracking-wider">Tier Timing Overrides</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider">Persona Timing Overrides</h4>
                     <select
-                      value={timingTierKey}
-                      onChange={(e) => setSelectedTimingTier(e.target.value)}
+                      value={timingPersonaKey}
+                      onChange={(e) => setSelectedTimingPersona(e.target.value)}
                       className={`rounded px-2 py-1 text-xs border ${theme.inputClass}`}
                     >
-                      {Object.keys(parsedConfig.tiers).map((tierKey) => (
-                        <option key={tierKey} value={tierKey}>
-                          {tierKey}
+                      {Object.keys(parsedConfig.personas).map((personaKey) => (
+                        <option key={personaKey} value={personaKey}>
+                          {personaKey}
                         </option>
                       ))}
                     </select>
                     <span className={`text-[11px] ${theme.mutedClass}`}>
-                      Edit the selected tier's stage duration and peak-hour settings.
+                      Edit the selected persona's stage duration and peak-hour settings.
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
                     {FUNNEL_STEPS.map((step) => {
                       const duration = {
                         ...(parsedConfig.funnel?.[step]?.duration || {}),
-                        ...(timingTier[step]?.duration || {}),
+                        ...(timingPersona[step]?.duration || {}),
                       };
                       return (
                         <div key={step} className="p-3 rounded border border-inherit bg-black/5 dark:bg-white/5 space-y-2">
@@ -630,7 +630,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                                 value={duration[field] ?? 0}
                                 onChange={(e) =>
                                   updateField(
-                                    ['tiers', timingTierKey, step, 'duration', field],
+                                    ['personas', timingPersonaKey, step, 'duration', field],
                                     Number(e.target.value)
                                   )
                                 }
@@ -644,12 +644,12 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                   </div>
                   <div className="space-y-2">
                     <span className={`block text-[11px] font-semibold uppercase ${theme.mutedClass}`}>
-                      {timingTierKey} Peak Visit Hours
+                      {timingPersonaKey} Peak Visit Hours
                     </span>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                       {Object.entries<any>({
                         ...(parsedConfig.funnel?.visit_hour_peak || {}),
-                        ...(timingTier.visit_hour_peak || {}),
+                        ...(timingPersona.visit_hour_peak || {}),
                       }).map(([peakKey, peak]) => (
                         <div key={peakKey} className="p-3 rounded border border-inherit bg-black/5 dark:bg-white/5">
                           <span className="font-bold uppercase text-emerald-600 dark:text-emerald-400">
@@ -669,8 +669,8 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                                     onChange={(e) =>
                                       updateField(
                                         field === 'weight'
-                                          ? ['tiers', timingTierKey, 'visit_hour_peak', peakKey, 'weight']
-                                          : ['tiers', timingTierKey, 'visit_hour_peak', peakKey, 'hour', field],
+                                          ? ['personas', timingPersonaKey, 'visit_hour_peak', peakKey, 'weight']
+                                          : ['personas', timingPersonaKey, 'visit_hour_peak', peakKey, 'hour', field],
                                         Number(e.target.value)
                                       )
                                     }
@@ -684,9 +684,9 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                       ))}
                       {Object.keys({
                         ...(parsedConfig.funnel?.visit_hour_peak || {}),
-                        ...(timingTier.visit_hour_peak || {}),
+                        ...(timingPersona.visit_hour_peak || {}),
                       }).length === 0 && (
-                        <p className={`text-[11px] ${theme.mutedClass}`}>No peak hours configured for this tier or globally.</p>
+                        <p className={`text-[11px] ${theme.mutedClass}`}>No peak hours configured for this persona or globally.</p>
                       )}
                     </div>
                   </div>
@@ -955,12 +955,12 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                 </div>
               </div>
 
-              {/* Base tier profiles */}
+              {/* Base persona profiles */}
               <div className="space-y-2">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider">Base Tier Profiles</h4>
+                <h4 className="text-[11px] font-bold uppercase tracking-wider">Base Persona Profiles</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {['conservative', 'balanced', 'aggressive'].map((prof) => {
-                    const pData = parsedConfig.growth?.base?.tier_profiles?.[prof] || {};
+                    const pData = parsedConfig.growth?.base?.persona_profiles?.[prof] || {};
                     return (
                       <div key={prof} className="p-3.5 rounded border border-inherit bg-black/5 dark:bg-white/5 space-y-2">
                         <span className="font-bold text-xs capitalize text-emerald-600 dark:text-emerald-400">{prof}</span>
@@ -973,7 +973,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                               min="0"
                               value={pData.new_user ?? 1.0}
                               onChange={(e) =>
-                                updateField(['growth', 'base', 'tier_profiles', prof, 'new_user'], parseFloat(e.target.value))
+                                updateField(['growth', 'base', 'persona_profiles', prof, 'new_user'], parseFloat(e.target.value))
                               }
                               className={`w-16 text-right rounded px-1.5 py-0.5 font-mono tabular-nums border ${theme.inputClass}`}
                             />
@@ -986,7 +986,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                               min="0"
                               value={pData.visit ?? 1.0}
                               onChange={(e) =>
-                                updateField(['growth', 'base', 'tier_profiles', prof, 'visit'], parseFloat(e.target.value))
+                                updateField(['growth', 'base', 'persona_profiles', prof, 'visit'], parseFloat(e.target.value))
                               }
                               className={`w-16 text-right rounded px-1.5 py-0.5 font-mono tabular-nums border ${theme.inputClass}`}
                             />
@@ -1000,7 +1000,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = ({
                               value={pData.conversion ?? 1.0}
                               onChange={(e) =>
                                 updateField(
-                                  ['growth', 'base', 'tier_profiles', prof, 'conversion'],
+                                  ['growth', 'base', 'persona_profiles', prof, 'conversion'],
                                   parseFloat(e.target.value)
                                 )
                               }

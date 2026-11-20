@@ -210,7 +210,7 @@ fn default_seed() -> u64 { 20260101 }
 fn default_reactivation() -> f64 { 0.002 }
 
 // ============================================================================
-// TIER CONFIG
+// PERSONA CONFIG
 // ============================================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -227,7 +227,7 @@ pub struct HourPeakConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TierConfig {
+pub struct PersonaConfig {
     #[serde(default = "default_profile")]
     pub profile: String,
     pub description: Option<String>,
@@ -313,7 +313,7 @@ pub struct GrowthBaseConfig {
     #[serde(default)]
     pub overall: Option<GrowthMultipliers>,
     #[serde(default)]
-    pub tier_profiles: HashMap<String, GrowthMultipliers>,
+    pub persona_profiles: HashMap<String, GrowthMultipliers>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -349,7 +349,7 @@ pub struct CampaignConfig {
     #[serde(default)]
     pub overall: Option<GrowthMultipliers>,
     #[serde(default)]
-    pub tiers: Option<HashMap<String, GrowthMultipliers>>,
+    pub personas: Option<HashMap<String, GrowthMultipliers>>,
     #[serde(default)]
     pub profiles: Option<HashMap<String, GrowthMultipliers>>,
 }
@@ -366,7 +366,7 @@ pub struct FullSimulationConfig {
     pub date: DateConfig,
     pub catalog: CatalogConfig,
     pub funnel: FunnelConfig,
-    pub tiers: HashMap<String, TierConfig>,
+    pub personas: HashMap<String, PersonaConfig>,
     #[serde(default)]
     pub growth: Option<GrowthConfig>,
     #[serde(default)]
@@ -424,7 +424,7 @@ growth:
     overall:
       new_user: 1.0
       visit: 1.0
-    tier_profiles:
+    persona_profiles:
       conservative:
         new_user: 0.9
         visit: 1.0
@@ -447,7 +447,7 @@ event:
       aggressive:
         conversion:
           landing_page: 1.05
-tiers:
+personas:
   family_shoppers:
     base_user: 4
     category_weight:

@@ -4,7 +4,7 @@ Applies to the `lettuce-melon-engine` Rust crate in `engine/`.
 
 ## 1. Architecture & Python/TS Parity
 
-- Module layout mirrors the Python simulation (`sim/`) and TypeScript simulator (`web/src/engine/simulator.ts`):
+- Module layout mirrors the archived Python simulation (`archive/sim/`) and TypeScript simulator (`web/src/engine/simulator.ts`):
   - `config.rs` — `serde` structs (`FullSimulationConfig`) parsing YAML or JSON configs.
   - `models.rs` — Output schemas (`UserRecord`, `FunnelEventRecord`, `TransactionRecord`, `TransactionItemRecord`, `CatalogItemRecord`, `DailyMetric`, `SimulationSummary`, `SimulationOutput`).
   - `user.rs`, `funnel.rs`, `basket.rs`, `simulation.rs`, `utils.rs` — Core simulation stages and deterministic seeded RNG (`rand_chacha`, `sha2`).
@@ -13,7 +13,7 @@ Applies to the `lettuce-melon-engine` Rust crate in `engine/`.
 ## 2. Engineering Rules (Medium Guardrails)
 
 - **Fault-Tolerant Config Parsing**: Because users edit raw YAML in the web UI, `config.rs` structs should use `#[serde(default)]` and clear error messages (`Result<_, String>`) rather than panicking on omitted optional keys.
-- **Schema & Export Stability**: Keep `models.rs` field names and `lib.rs` CSV headers (`export_table_csv`) synchronized with `web/src/types/simulation.ts` and `generate.py`.
+- **Schema & Export Stability**: Keep `models.rs` field names and `lib.rs` CSV headers (`export_table_csv`) synchronized with `web/src/types/simulation.ts` and `archive/generate.py`.
 - **Deterministic Reproducibility**: Preserve per-date seeded RNG derivation (`seed_for_date` via SHA-256). Do not claim exact cross-language RNG parity with Python `random` or JS `mulberry32` unless tested.
 - **Accessible Explanations**: In chat summaries or docs, explain Rust concepts (ownership, borrowing, `serde`, `wasm-bindgen`) in beginner-friendly language. Keep inline code comments focused on *why* rather than restating syntax.
 

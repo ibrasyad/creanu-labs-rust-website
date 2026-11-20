@@ -45,10 +45,10 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({
           },
         };
       }
-      // Ensure tiers include default weight for the new category
-      for (const tier of Object.values<any>(cfg.tiers || {})) {
-        if (tier.category_weight && tier.category_weight[cleanCat] === undefined) {
-          tier.category_weight[cleanCat] = 1.0;
+      // Ensure personas include default weight for the new category
+      for (const persona of Object.values<any>(cfg.personas || {})) {
+        if (persona.category_weight && persona.category_weight[cleanCat] === undefined) {
+          persona.category_weight[cleanCat] = 1.0;
         }
       }
     });
@@ -60,9 +60,9 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({
     if (Object.keys(catalogObj).length <= 1) return;
     mutateConfig((cfg) => {
       if (cfg.catalog) delete cfg.catalog[catKey];
-      for (const tier of Object.values<any>(cfg.tiers || {})) {
-        if (tier.category_weight) delete tier.category_weight[catKey];
-        if (tier.quantity_bias) delete tier.quantity_bias[catKey];
+      for (const persona of Object.values<any>(cfg.personas || {})) {
+        if (persona.category_weight) delete persona.category_weight[catKey];
+        if (persona.quantity_bias) delete persona.quantity_bias[catKey];
       }
     });
     if (selectedCategory === catKey) setSelectedCategory(null);

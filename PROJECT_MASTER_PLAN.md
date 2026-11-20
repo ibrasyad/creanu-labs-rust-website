@@ -70,13 +70,13 @@ You are completely right: Cloudflare has unified Pages into **Cloudflare Workers
 
 Your point is spot-on: the product catalog (`config/catalog.yaml`) is built exclusively around **fresh groceries and produce** (vegetables like spinach/kale/lettuce, fruits like berries/citrus/tropical, with prices in Indonesian Rupiah IDR).
 
-Rather than generic retail, the presets must represent **realistic grocery & supermarket shopping dynamics** matching your existing customer tiers (`family_shoppers`, `health_conscious`, `students`, `young_professionals`, `small_business_owners`):
+Rather than generic retail, the presets must represent **realistic grocery & supermarket shopping dynamics** matching your existing customer personas (`family_shoppers`, `health_conscious`, `students`, `young_professionals`, `small_business_owners`):
 
 | Preset Scenario                                 | Dynamics & Alignment with Repo                                                                                                                           |
 | :---------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **1. Weekend Family Supermarket Rush**          | High weight on `family_shoppers`, Saturday/Sunday traffic spike, large baskets (8–15 items), higher units per item, bulk leafy greens & root vegetables. |
-| **2. Healthy Living & Organic Wave**            | High weight on `health_conscious` tier, daily steady visits, high preference for berries, citrus, and leafy greens with low cooldown sensitivity.        |
-| **3. Student & Young Professional Quick-Bites** | Dominant `students` and `young_professionals` tiers, weekday evening peaks (7–10 PM), smaller quick baskets (1–4 items), fast checkout.                  |
+| **2. Healthy Living & Organic Wave**            | High weight on `health_conscious` persona, daily steady visits, high preference for berries, citrus, and leafy greens with low cooldown sensitivity.     |
+| **3. Student & Young Professional Quick-Bites** | Dominant `students` and `young_professionals` personas, weekday evening peaks (7–10 PM), smaller quick baskets (1–4 items), fast checkout.               |
 | **4. Cafe & Restaurant Daily Restock**          | High weight on `small_business_owners`, high weekday order frequency, large bulk quantities, strict cooldown adherence.                                  |
 | **5. Holiday Harvest Surge**                    | High December holiday multiplier (`monthly_rate: 1.4`), surge in tropical fruits, stone fruits, and gift/celebration baskets.                            |
 

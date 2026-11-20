@@ -6,11 +6,11 @@ import random
 import numpy as np
 import pandas as pd
 
-from .config import get_catalog, get_date_config, get_simulation, get_tiers
+from .config import get_catalog, get_date_config, get_simulation, get_personas
 from .utils import apply_noise, get_day_of_week, get_month_name, weighted_choice
 
 _catalog = get_catalog()
-_tiers = get_tiers()
+_personas = get_personas()
 _sim = get_simulation()
 _date_config = get_date_config()
 
@@ -84,18 +84,18 @@ def _available(category, subcategory, product, user_id, current_date, history):
     return (pd.Timestamp(current_date).normalize() - last_purchase).days >= _effective_cooldown(category, subcategory, product)
 
 
-def _basket_config(tier):
+def _basket_config(persona):
     basket = dict(_sim.get("basket", {}))
-    basket.update(tier.get("basket", {}))
+    basket.update(persona.get("basket", {}))
     return basket
 
 
-def _candidate(tier, user_id, current_date, history, picked_subcategories, duplicate_rules):
-    categories = tier["category_weight"]
+def _candidate(persona, user_id, current_date, history, picked_subcategories, duplicate_rules):
+    categories = persona["category_weight"]
     for _ in range(100):
         category = weighted_choice(categories)
         subcategories = _catalog[category]
-        weights = tier.get("subcategory_weight", {}).get(category)
+        weights = persona.get("subcategory_weight", {}).get(category)
         subcategory = weighted_choice(weights) if weights else weighted_choice({name: 1 for name in subcategories})
         if not duplicate_rules.get(subcategory, True) and subcategory in picked_subcategories:
             continue
@@ -106,7 +106,7 @@ def _candidate(tier, user_id, current_date, history, picked_subcategories, dupli
     return None
 
 
-def generate_basket(tier_name=None, user_id=None, current_date=None, purchase_history=None, seed=None):
+def generate_basket(persona_name=None, user_id=None, current_date=None, purchase_history=None, seed=None):
     """Generate a basket that honours duplicate and historical cooldown rules."""
     if seed is not None:
         # Local seed support without changing the surrounding simulation stream.
@@ -114,26 +114,26 @@ def generate_basket(tier_name=None, user_id=None, current_date=None, purchase_hi
         np.random.seed(seed)
         random.seed(seed)
     try:
-        if tier_name is None:
-            tier_name = random.choice(list(_tiers))
-        tier = _tiers[tier_name]
+        if persona_name is None:
+            persona_name = random.choice(list(_personas))
+        persona = _personas[persona_name]
         user_id = user_id or "anonymous"
         current_date = current_date or _date_config["start_date"]
         history = purchase_history if purchase_history is not None else {}
-        basket_cfg = _basket_config(tier)
+        basket_cfg = _basket_config(persona)
         min_items, max_items = basket_cfg["min_items"], basket_cfg["max_items"]
         # A triangular distribution avoids overproducing extreme basket sizes.
         basket_size = int(round(random.triangular(min_items, max_items, (min_items + max_items) / 2)))
         duplicate_rules = dict(_sim.get("subcategory_allow_duplicates", {}))
-        duplicate_rules.update(tier.get("subcategory_allow_duplicates", {}))
+        duplicate_rules.update(persona.get("subcategory_allow_duplicates", {}))
         basket, picked = [], set()
         for _ in range(basket_size):
-            candidate = _candidate(tier, user_id, current_date, history, picked, duplicate_rules)
+            candidate = _candidate(persona, user_id, current_date, history, picked, duplicate_rules)
             if candidate is None:
                 break
             category, subcategory, product_name, product = candidate
-            base_lambda = tier.get("quantity_model", {}).get("base_lambda", _sim["quantity_model"]["base_lambda"])
-            quantity = max(1, int(np.random.poisson(base_lambda * tier.get("quantity_bias", {}).get(category, 1.0))))
+            base_lambda = persona.get("quantity_model", {}).get("base_lambda", _sim["quantity_model"]["base_lambda"])
+            quantity = max(1, int(np.random.poisson(base_lambda * persona.get("quantity_bias", {}).get(category, 1.0))))
             cv = float(_sim["price_variation"].get("std_pct", 0.0))
             sigma = np.sqrt(np.log1p(cv * cv))
             unit_price = max(1, int(round(product["base_price"] * np.random.lognormal(-0.5 * sigma * sigma, sigma), -2)))

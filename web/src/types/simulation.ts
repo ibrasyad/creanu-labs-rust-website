@@ -1,5 +1,5 @@
 export interface UserRecord {
-  tier: string;
+  persona: string;
   user_id: string;
   city: string;
   gender: string;
@@ -10,7 +10,7 @@ export interface UserRecord {
 
 export interface FunnelEventRecord {
   session_id: string;
-  tier: string;
+  persona: string;
   user_id: string;
   activity: string;
   activity_datetime: string;
@@ -21,14 +21,14 @@ export interface TransactionRecord {
   user_id: string;
   trx_id: string;
   date: string;
-  tier: string;
+  persona: string;
   total_price: number;
 }
 
 export interface TransactionItemRecord {
   trx_id: string;
   user_id: string;
-  tier: string;
+  persona: string;
   date: string;
   product: string;
   quantity: number;

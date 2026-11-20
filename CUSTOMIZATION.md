@@ -8,7 +8,7 @@ All customization happens in the `config/` directory. Each file controls a diffe
 
 - `catalog.yaml` - Your product list and pricing (and minor settings like cooldown)
 - `date.yaml` - Time period and transaction volume based on weekday and month patterns
-- `tiers/` - Customer segment definitions and behavior patterns
+- `personas/` - Customer persona definitions and behavior patterns
 - `simulation.yaml` - Global defaults
 - `growth.yaml` - User growth patterns (acquisition, visit frequency, conversion)
 - `funnel.yaml` - Customer journey settings
@@ -45,9 +45,9 @@ Group related products logically:
 
 ## Customer Segment Customization
 
-### Creating New Customer Types
+### Creating New Customer Personas
 
-Create a new file in `config/tiers/` named after your segment:
+Create a new file in `config/personas/` named after your persona:
 
 ```yaml
 your_segment_name:
@@ -147,7 +147,7 @@ Customize `config/funnel.yaml` for customer journey tracking:
 
 ### Global Defaults
 
-`config/simulation.yaml` contains system-wide defaults that apply unless overridden in specific tier configs.
+`config/simulation.yaml` contains system-wide defaults that apply unless overridden in specific persona configs.
 
 ## Testing Your Customizations
 
@@ -169,7 +169,7 @@ Customize `config/funnel.yaml` for customer journey tracking:
 
 **Too Many Transactions:**
 - Lower `weekday_base` values in `date.yaml`
-- Reduce `visit_chance` in tier configs
+- Reduce `visit_chance` in persona configs
 - Increase `visit_decay` multipliers in `config/simulation.yaml` to reduce the number of old customers
 
 **Unrealistic Baskets:**
@@ -178,7 +178,7 @@ Customize `config/funnel.yaml` for customer journey tracking:
 - Check `cooldown` settings in catalog
 
 **Wrong Customer Mix:**
-- Adjust `base_user` values in tier configs
+- Adjust `base_user` values in persona configs
 - Modify `daily_new_user_chance` settings
 
 ## Getting Help
@@ -187,7 +187,7 @@ If you run into issues:
 
 1. Check the YAML syntax - indentation matters
 2. Verify all required fields are present
-3. Look at existing tier configs for examples
+3. Look at existing persona configs for examples
 4. Test with minimal changes first
 
 The system is designed to be forgiving, but YAML syntax errors will prevent it from running. Use a YAML validator if you're unsure about your syntax.

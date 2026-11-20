@@ -2,7 +2,7 @@ use chrono::NaiveDate;
 use rand::Rng;
 use std::collections::HashMap;
 
-use crate::config::{FullSimulationConfig, TierConfig};
+use crate::config::{FullSimulationConfig, PersonaConfig};
 use crate::models::UserRecord;
 use crate::utils::{get_day_of_week, weighted_choice};
 
@@ -35,32 +35,32 @@ fn default_channels() -> HashMap<String, f64> {
 
 /// Generate a single user record
 pub fn generate_user_record<R: Rng>(
-    tier_name: &str,
-    tier_cfg: &TierConfig,
+    persona_name: &str,
+    persona_cfg: &PersonaConfig,
     user_index: usize,
     registered_date: &str,
     rng: &mut R,
 ) -> UserRecord {
     let default_city = default_cities();
-    let city_weights = tier_cfg.city.as_ref().unwrap_or(&default_city);
+    let city_weights = persona_cfg.city.as_ref().unwrap_or(&default_city);
     let city = weighted_choice(city_weights, rng)
         .cloned()
         .unwrap_or_else(|| "Jakarta".to_string());
 
     let default_gender = default_genders();
-    let gender_weights = tier_cfg.gender.as_ref().unwrap_or(&default_gender);
+    let gender_weights = persona_cfg.gender.as_ref().unwrap_or(&default_gender);
     let gender = weighted_choice(gender_weights, rng)
         .cloned()
         .unwrap_or_else(|| "Female".to_string());
 
     let default_channel = default_channels();
-    let channel_weights = tier_cfg.acquisition_channel.as_ref().unwrap_or(&default_channel);
+    let channel_weights = persona_cfg.acquisition_channel.as_ref().unwrap_or(&default_channel);
     let channel = weighted_choice(channel_weights, rng)
         .cloned()
         .unwrap_or_else(|| "Organic Search".to_string());
 
     UserRecord {
-        tier: tier_name.to_string(),
+        persona: persona_name.to_string(),
         user_id: format!("usr-{:06}", user_index),
         city,
         gender,
@@ -70,41 +70,41 @@ pub fn generate_user_record<R: Rng>(
     }
 }
 
-/// Generate initial base users for simulation start in deterministic tier order
+/// Generate initial base users for simulation start in deterministic persona order
 pub fn generate_base_users<R: Rng>(config: &FullSimulationConfig, start_date: &str, rng: &mut R) -> Vec<UserRecord> {
     let mut users = Vec::new();
     let mut user_counter = 1;
 
-    let mut tier_names: Vec<&String> = config.tiers.keys().collect();
-    tier_names.sort();
+    let mut persona_names: Vec<&String> = config.personas.keys().collect();
+    persona_names.sort();
 
-    for tier_name in tier_names {
-        let tier_cfg = &config.tiers[tier_name];
-        for _ in 0..tier_cfg.base_user {
-            users.push(generate_user_record(tier_name, tier_cfg, user_counter, start_date, rng));
+    for persona_name in persona_names {
+        let persona_cfg = &config.personas[persona_name];
+        for _ in 0..persona_cfg.base_user {
+            users.push(generate_user_record(persona_name, persona_cfg, user_counter, start_date, rng));
             user_counter += 1;
         }
     }
     users
 }
 
-/// Roll daily new user arrivals for a tier
-pub fn roll_new_users_for_tier<R: Rng>(
-    tier_cfg: &TierConfig,
+/// Roll daily new user arrivals for a persona
+pub fn roll_new_users_for_persona<R: Rng>(
+    persona_cfg: &PersonaConfig,
     date: NaiveDate,
     new_user_multiplier: f64,
     rng: &mut R,
 ) -> usize {
     let weekday = get_day_of_week(date);
     let is_weekend = weekday == "saturday" || weekday == "sunday";
-    let base_chance = if is_weekend && tier_cfg.daily_new_user_chance_weekend > 0.0 {
-        tier_cfg.daily_new_user_chance_weekend
+    let base_chance = if is_weekend && persona_cfg.daily_new_user_chance_weekend > 0.0 {
+        persona_cfg.daily_new_user_chance_weekend
     } else {
-        tier_cfg.daily_new_user_chance
+        persona_cfg.daily_new_user_chance
     };
     let effective_chance = (base_chance * new_user_multiplier).clamp(0.0, 1.0);
 
-    let retries = tier_cfg.daily_retry.max(1);
+    let retries = persona_cfg.daily_retry.max(1);
     let mut new_users = 0;
 
     for _ in 0..retries {

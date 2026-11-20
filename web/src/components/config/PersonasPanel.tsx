@@ -10,14 +10,14 @@ import {
   sanitizeSlug,
 } from './types';
 
-interface TiersPanelProps {
+interface PersonasPanelProps {
   parsedConfig: any;
   updateField: UpdateFieldFn;
   mutateConfig: MutateConfigFn;
   theme: ThemeConfig;
 }
 
-type TierDrawerSection = 'demographics' | 'schedule' | 'funnel' | 'weights';
+type PersonaDrawerSection = 'demographics' | 'schedule' | 'funnel' | 'weights';
 
 const DEFAULT_DEMOGRAPHICS = {
   city: {
@@ -37,36 +37,36 @@ const DEFAULT_DEMOGRAPHICS = {
   },
 };
 
-export const TiersPanel: React.FC<TiersPanelProps> = ({
+export const PersonasPanel: React.FC<PersonasPanelProps> = ({
   parsedConfig,
   updateField,
   mutateConfig,
   theme,
 }) => {
-  const [openSections, setOpenSections] = useState<Record<string, TierDrawerSection | null>>({});
-  const [newTierName, setNewTierName] = useState('');
+  const [openSections, setOpenSections] = useState<Record<string, PersonaDrawerSection | null>>({});
+  const [newPersonaName, setNewPersonaName] = useState('');
   const [newWeightKeys, setNewWeightKeys] = useState<Record<string, string>>({});
   const [selectedSubcatCategory, setSelectedSubcatCategory] = useState<Record<string, string>>({});
 
-  const tiersObj: Record<string, any> = parsedConfig.tiers || {};
-  const tierEntries = Object.entries(tiersObj);
+  const personasObj: Record<string, any> = parsedConfig.personas || {};
+  const personaEntries = Object.entries(personasObj);
   const catalogKeys = Object.keys(parsedConfig.catalog || {});
 
-  const toggleSection = (tierKey: string, section: TierDrawerSection) => {
+  const toggleSection = (personaKey: string, section: PersonaDrawerSection) => {
     setOpenSections((prev) => ({
       ...prev,
-      [tierKey]: prev[tierKey] === section ? null : section,
+      [personaKey]: prev[personaKey] === section ? null : section,
     }));
   };
 
-  const handleAddTier = () => {
+  const handleAddPersona = () => {
     const cleanKey =
-      sanitizeSlug(newTierName) || `segment_${tierEntries.length + 1}`;
+      sanitizeSlug(newPersonaName) || `persona_${personaEntries.length + 1}`;
     mutateConfig((cfg) => {
-      cfg.tiers = cfg.tiers || {};
+      cfg.personas = cfg.personas || {};
       let uniqueKey = cleanKey;
       let idx = 2;
-      while (cfg.tiers[uniqueKey]) uniqueKey = `${cleanKey}_${idx++}`;
+      while (cfg.personas[uniqueKey]) uniqueKey = `${cleanKey}_${idx++}`;
 
       const categoryWeights: Record<string, number> = {};
       const quantityBias: Record<string, number> = {};
@@ -75,9 +75,9 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
         quantityBias[cat] = 1.0;
       }
 
-      cfg.tiers[uniqueKey] = {
+      cfg.personas[uniqueKey] = {
         profile: 'balanced',
-        description: 'Custom shopper segment',
+        description: 'Custom shopper persona',
         base_user: 10,
         daily_retry: 2,
         daily_new_user_chance: 0.08,
@@ -98,43 +98,43 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
         acquisition_channel: { ...DEFAULT_DEMOGRAPHICS.acquisition_channel },
       };
     });
-    setNewTierName('');
+    setNewPersonaName('');
   };
 
-  const handleRemoveTier = (tierKey: string) => {
-    if (tierEntries.length <= 1) return;
+  const handleRemovePersona = (personaKey: string) => {
+    if (personaEntries.length <= 1) return;
     mutateConfig((cfg) => {
-      if (cfg.tiers) delete cfg.tiers[tierKey];
+      if (cfg.personas) delete cfg.personas[personaKey];
     });
   };
 
   const addDemographicEntry = (
-    tierKey: string,
+    personaKey: string,
     group: 'city' | 'gender' | 'acquisition_channel'
   ) => {
-    const fieldId = `${tierKey}:${group}`;
+    const fieldId = `${personaKey}:${group}`;
     const clean = sanitizeSlug(newWeightKeys[fieldId] || '');
     if (!clean) return;
     mutateConfig((cfg) => {
-      const tier = cfg.tiers?.[tierKey];
-      if (!tier) return;
-      if (!tier[group] || typeof tier[group] !== 'object') {
-        tier[group] = { ...DEFAULT_DEMOGRAPHICS[group] };
+      const persona = cfg.personas?.[personaKey];
+      if (!persona) return;
+      if (!persona[group] || typeof persona[group] !== 'object') {
+        persona[group] = { ...DEFAULT_DEMOGRAPHICS[group] };
       }
-      if (tier[group][clean] === undefined) {
-        tier[group][clean] = 10;
+      if (persona[group][clean] === undefined) {
+        persona[group][clean] = 10;
       }
     });
     setNewWeightKeys((prev) => ({ ...prev, [fieldId]: '' }));
   };
 
   const removeDemographicEntry = (
-    tierKey: string,
+    personaKey: string,
     group: 'city' | 'gender' | 'acquisition_channel',
     entryKey: string
   ) => {
     mutateConfig((cfg) => {
-      const map = cfg.tiers?.[tierKey]?.[group];
+      const map = cfg.personas?.[personaKey]?.[group];
       if (!map || Object.keys(map).length <= 1) return;
       delete map[entryKey];
     });
@@ -146,79 +146,79 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <p className={`text-xs ${theme.mutedClass}`}>
-            Configure customer cohorts. Expand sections inside any tier card for demographics, weekday schedules, funnel overrides, and category weights.
+            Configure customer cohorts. Expand sections inside any persona card for demographics, weekday schedules, funnel overrides, and category weights.
           </p>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
           <input
             type="text"
-            value={newTierName}
-            onChange={(e) => setNewTierName(e.target.value)}
+            value={newPersonaName}
+            onChange={(e) => setNewPersonaName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddTier();
+              if (e.key === 'Enter') handleAddPersona();
             }}
-            placeholder="New tier name..."
+            placeholder="New persona name..."
             className={`w-36 rounded px-2 py-1 text-xs border ${theme.inputClass}`}
           />
           <button
-            onClick={handleAddTier}
+            onClick={handleAddPersona}
             className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold border whitespace-nowrap shrink-0 ${theme.buttonClass}`}
           >
-            <Plus className="w-3.5 h-3.5" /> Add Tier
+            <Plus className="w-3.5 h-3.5" /> Add Persona
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {tierEntries.map(([tierKey, tier]) => {
-          const activeDrawer = openSections[tierKey] ?? null;
+        {personaEntries.map(([personaKey, persona]) => {
+          const activeDrawer = openSections[personaKey] ?? null;
           const subcatCatKey =
-            selectedSubcatCategory[tierKey] && parsedConfig.catalog?.[selectedSubcatCategory[tierKey]]
-              ? selectedSubcatCategory[tierKey]
+            selectedSubcatCategory[personaKey] && parsedConfig.catalog?.[selectedSubcatCategory[personaKey]]
+              ? selectedSubcatCategory[personaKey]
               : catalogKeys[0] || '';
           const subcatsInCat = Object.keys(parsedConfig.catalog?.[subcatCatKey] || {});
 
           return (
             <div
-              key={tierKey}
+              key={personaKey}
               className="p-4 rounded-lg border border-inherit bg-black/5 dark:bg-white/5 space-y-3"
             >
-              {/* Tier Header */}
+              {/* Persona Header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-bold text-xs capitalize text-emerald-600 dark:text-emerald-400">
-                      {tierKey.replace(/_/g, ' ')}
+                      {personaKey.replace(/_/g, ' ')}
                     </h4>
-                    <span className="text-[10px] font-mono opacity-60">{tierKey}</span>
+                    <span className="text-[10px] font-mono opacity-60">{personaKey}</span>
                   </div>
                   <input
                     type="text"
-                    value={tier.description ?? ''}
-                    placeholder="Tier description..."
-                    onChange={(e) => updateField(['tiers', tierKey, 'description'], e.target.value)}
+                    value={persona.description ?? ''}
+                    placeholder="Persona description..."
+                    onChange={(e) => updateField(['personas', personaKey, 'description'], e.target.value)}
                     className={`w-full rounded px-2 py-1 text-[11px] border ${theme.inputClass}`}
                   />
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <select
-                    value={tier.profile ?? 'balanced'}
-                    onChange={(e) => updateField(['tiers', tierKey, 'profile'], e.target.value)}
-                    aria-label={`${tierKey} profile`}
+                    value={persona.profile ?? 'balanced'}
+                    onChange={(e) => updateField(['personas', personaKey, 'profile'], e.target.value)}
+                    aria-label={`${personaKey} profile`}
                     className={`rounded px-2 py-1 text-[11px] font-mono border ${theme.inputClass}`}
                   >
                     <option value="conservative">conservative</option>
                     <option value="balanced">balanced</option>
                     <option value="aggressive">aggressive</option>
                   </select>
-                  {tierEntries.length > 1 && (
+                  {personaEntries.length > 1 && (
                     <button
-                      onClick={() => handleRemoveTier(tierKey)}
+                      onClick={() => handleRemovePersona(personaKey)}
                       className="p-1 opacity-60 hover:opacity-100 hover:text-rose-500 transition"
-                      title="Delete tier"
-                      aria-label={`Delete ${tierKey}`}
+                      title="Delete persona"
+                      aria-label={`Delete ${personaKey}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -234,8 +234,8 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                     type="number"
                     min="0"
                     max="2000"
-                    value={tier.base_user ?? 10}
-                    onChange={(e) => updateField(['tiers', tierKey, 'base_user'], Number(e.target.value))}
+                    value={persona.base_user ?? 10}
+                    onChange={(e) => updateField(['personas', personaKey, 'base_user'], Number(e.target.value))}
                     className={`w-full rounded px-2 py-1 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                   />
                 </div>
@@ -245,8 +245,8 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                     type="number"
                     min="1"
                     max="50"
-                    value={tier.daily_retry ?? 3}
-                    onChange={(e) => updateField(['tiers', tierKey, 'daily_retry'], Number(e.target.value))}
+                    value={persona.daily_retry ?? 3}
+                    onChange={(e) => updateField(['personas', personaKey, 'daily_retry'], Number(e.target.value))}
                     className={`w-full rounded px-2 py-1 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                   />
                 </div>
@@ -257,9 +257,9 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                     step="0.01"
                     min="0"
                     max="1"
-                    value={tier.daily_new_user_chance ?? 0.1}
+                    value={persona.daily_new_user_chance ?? 0.1}
                     onChange={(e) =>
-                      updateField(['tiers', tierKey, 'daily_new_user_chance'], parseFloat(e.target.value))
+                      updateField(['personas', personaKey, 'daily_new_user_chance'], parseFloat(e.target.value))
                     }
                     className={`w-full rounded px-2 py-1 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                   />
@@ -271,9 +271,9 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                     step="0.01"
                     min="0"
                     max="1"
-                    value={tier.daily_new_user_chance_weekend ?? 0.15}
+                    value={persona.daily_new_user_chance_weekend ?? 0.15}
                     onChange={(e) =>
-                      updateField(['tiers', tierKey, 'daily_new_user_chance_weekend'], parseFloat(e.target.value))
+                      updateField(['personas', personaKey, 'daily_new_user_chance_weekend'], parseFloat(e.target.value))
                     }
                     className={`w-full rounded px-2 py-1 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                   />
@@ -294,7 +294,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                   return (
                     <button
                       key={sec.id}
-                      onClick={() => toggleSection(tierKey, sec.id)}
+                      onClick={() => toggleSection(personaKey, sec.id)}
                       className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium border transition ${
                         isOpen ? theme.accentClass : `${theme.buttonClass} opacity-85 hover:opacity-100`
                       }`}
@@ -318,8 +318,8 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
                       {catalogKeys.map((cat) => {
-                        const weight = tier.category_weight?.[cat] ?? 1.0;
-                        const bias = tier.quantity_bias?.[cat] ?? 1.0;
+                        const weight = persona.category_weight?.[cat] ?? 1.0;
+                        const bias = persona.quantity_bias?.[cat] ?? 1.0;
                         return (
                           <div key={cat} className="flex items-center justify-between gap-1.5 text-[10px] py-0.5">
                             <span className="truncate capitalize flex-1">{cat.replace(/_/g, ' ')}</span>
@@ -332,7 +332,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                                 title="Category selection weight"
                                 value={weight}
                                 onChange={(e) =>
-                                  updateField(['tiers', tierKey, 'category_weight', cat], parseFloat(e.target.value))
+                                  updateField(['personas', personaKey, 'category_weight', cat], parseFloat(e.target.value))
                                 }
                                 className={`w-12 text-right rounded px-1 py-0.5 text-[10px] font-mono tabular-nums border ${theme.inputClass}`}
                               />
@@ -344,7 +344,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                                 title="Quantity bias multiplier"
                                 value={bias}
                                 onChange={(e) =>
-                                  updateField(['tiers', tierKey, 'quantity_bias', cat], parseFloat(e.target.value))
+                                  updateField(['personas', personaKey, 'quantity_bias', cat], parseFloat(e.target.value))
                                 }
                                 className={`w-12 text-right rounded px-1 py-0.5 text-[10px] font-mono tabular-nums border ${theme.inputClass}`}
                               />
@@ -365,7 +365,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                         <select
                           value={subcatCatKey}
                           onChange={(e) =>
-                            setSelectedSubcatCategory((prev) => ({ ...prev, [tierKey]: e.target.value }))
+                            setSelectedSubcatCategory((prev) => ({ ...prev, [personaKey]: e.target.value }))
                           }
                           className={`rounded px-1.5 py-0.5 text-[10px] border ${theme.inputClass}`}
                         >
@@ -378,7 +378,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {subcatsInCat.map((subKey) => {
-                          const val = tier.subcategory_weight?.[subcatCatKey]?.[subKey];
+                          const val = persona.subcategory_weight?.[subcatCatKey]?.[subKey];
                           return (
                             <label key={subKey} className="flex items-center justify-between gap-1 text-[10px]">
                               <span className="truncate capitalize">{subKey.replace(/_/g, ' ')}</span>
@@ -391,22 +391,22 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                                 onChange={(e) => {
                                   const raw = e.target.value;
                                   mutateConfig((cfg) => {
-                                    const t = cfg.tiers?.[tierKey];
-                                    if (!t) return;
+                                    const p = cfg.personas?.[personaKey];
+                                    if (!p) return;
                                     if (raw === '') {
-                                      if (t.subcategory_weight?.[subcatCatKey]) {
-                                        delete t.subcategory_weight[subcatCatKey][subKey];
-                                        if (Object.keys(t.subcategory_weight[subcatCatKey]).length === 0) {
-                                          delete t.subcategory_weight[subcatCatKey];
+                                      if (p.subcategory_weight?.[subcatCatKey]) {
+                                        delete p.subcategory_weight[subcatCatKey][subKey];
+                                        if (Object.keys(p.subcategory_weight[subcatCatKey]).length === 0) {
+                                          delete p.subcategory_weight[subcatCatKey];
                                         }
-                                        if (Object.keys(t.subcategory_weight).length === 0) {
-                                          delete t.subcategory_weight;
+                                        if (Object.keys(p.subcategory_weight).length === 0) {
+                                          delete p.subcategory_weight;
                                         }
                                       }
                                     } else {
-                                      t.subcategory_weight = t.subcategory_weight || {};
-                                      t.subcategory_weight[subcatCatKey] = t.subcategory_weight[subcatCatKey] || {};
-                                      t.subcategory_weight[subcatCatKey][subKey] = parseFloat(raw);
+                                      p.subcategory_weight = p.subcategory_weight || {};
+                                      p.subcategory_weight[subcatCatKey] = p.subcategory_weight[subcatCatKey] || {};
+                                      p.subcategory_weight[subcatCatKey][subKey] = parseFloat(raw);
                                     }
                                   });
                                 }}
@@ -432,10 +432,10 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                     ] as const
                   ).map((group) => {
                     const activeMap: Record<string, number> =
-                      tier[group.key] && Object.keys(tier[group.key]).length > 0
-                        ? tier[group.key]
+                      persona[group.key] && Object.keys(persona[group.key]).length > 0
+                        ? persona[group.key]
                         : DEFAULT_DEMOGRAPHICS[group.key];
-                    const fieldId = `${tierKey}:${group.key}`;
+                    const fieldId = `${personaKey}:${group.key}`;
                     return (
                       <div key={group.key} className="space-y-1.5">
                         <div className="flex items-center justify-between gap-2">
@@ -448,13 +448,13 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                                 setNewWeightKeys((prev) => ({ ...prev, [fieldId]: e.target.value }))
                               }
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') addDemographicEntry(tierKey, group.key);
+                                if (e.key === 'Enter') addDemographicEntry(personaKey, group.key);
                               }}
                               placeholder={`Add ${group.key.replace('_', ' ')}...`}
                               className={`w-28 rounded px-1.5 py-0.5 text-[10px] border ${theme.inputClass}`}
                             />
                             <button
-                              onClick={() => addDemographicEntry(tierKey, group.key)}
+                              onClick={() => addDemographicEntry(personaKey, group.key)}
                               className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${theme.buttonClass}`}
                               title={`Add ${group.key}`}
                             >
@@ -479,19 +479,19 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                                   onChange={(e) => {
                                     const num = parseFloat(e.target.value);
                                     mutateConfig((cfg) => {
-                                      const t = cfg.tiers?.[tierKey];
-                                      if (!t) return;
-                                      if (!t[group.key]) {
-                                        t[group.key] = { ...DEFAULT_DEMOGRAPHICS[group.key] };
+                                      const p = cfg.personas?.[personaKey];
+                                      if (!p) return;
+                                      if (!p[group.key]) {
+                                        p[group.key] = { ...DEFAULT_DEMOGRAPHICS[group.key] };
                                       }
-                                      t[group.key][entryKey] = Number.isFinite(num) ? num : 0;
+                                      p[group.key][entryKey] = Number.isFinite(num) ? num : 0;
                                     });
                                   }}
                                   className={`w-11 text-right rounded px-1 py-0.5 text-[10px] font-mono tabular-nums border ${theme.inputClass}`}
                                 />
-                                {Object.keys(activeMap).length > 1 && tier[group.key]?.[entryKey] !== undefined && (
+                                {Object.keys(activeMap).length > 1 && persona[group.key]?.[entryKey] !== undefined && (
                                   <button
-                                    onClick={() => removeDemographicEntry(tierKey, group.key, entryKey)}
+                                    onClick={() => removeDemographicEntry(personaKey, group.key, entryKey)}
                                     className="opacity-50 hover:opacity-100 hover:text-rose-500"
                                     title={`Remove ${entryKey}`}
                                   >
@@ -518,7 +518,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       {WEEKDAYS.map((day) => {
                         const val =
-                          tier.visit_chance?.[day] ??
+                          persona.visit_chance?.[day] ??
                           parsedConfig.simulation?.visit_chance?.[day] ??
                           (day === 'saturday' || day === 'sunday' ? 0.08 : 0.05);
                         return (
@@ -531,7 +531,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                               max="1"
                               value={val}
                               onChange={(e) =>
-                                updateField(['tiers', tierKey, 'visit_chance', day], parseFloat(e.target.value))
+                                updateField(['personas', personaKey, 'visit_chance', day], parseFloat(e.target.value))
                               }
                               className={`w-14 text-right rounded px-1 py-0.5 text-[10px] font-mono tabular-nums border ${theme.inputClass}`}
                             />
@@ -554,10 +554,10 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                             step="0.05"
                             min="0"
                             max="5"
-                            value={tier.monthly_visit_chance_multiplier?.[m] ?? 1.0}
+                            value={persona.monthly_visit_chance_multiplier?.[m] ?? 1.0}
                             onChange={(e) =>
                               updateField(
-                                ['tiers', tierKey, 'monthly_visit_chance_multiplier', m],
+                                ['personas', personaKey, 'monthly_visit_chance_multiplier', m],
                                 parseFloat(e.target.value)
                               )
                             }
@@ -575,12 +575,12 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                 <div className="pt-2 border-t border-inherit/40 space-y-3 text-[11px]">
                   <div className="space-y-1.5">
                     <span className={`block font-semibold ${theme.mutedClass}`}>
-                      Tier Conversion Rates (Overrides Global Funnel)
+                      Persona Conversion Rates (Overrides Global Funnel)
                     </span>
                     <div className="grid grid-cols-2 gap-2">
                       {CONVERSION_STEPS.map((step) => {
                         const rate =
-                          tier[step.key]?.conversion_rate ??
+                          persona[step.key]?.conversion_rate ??
                           parsedConfig.funnel?.[step.key]?.conversion_rate ??
                           step.fallback;
                         return (
@@ -593,7 +593,7 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                               max="1"
                               value={rate}
                               onChange={(e) =>
-                                updateField(['tiers', tierKey, step.key, 'conversion_rate'], parseFloat(e.target.value))
+                                updateField(['personas', personaKey, step.key, 'conversion_rate'], parseFloat(e.target.value))
                               }
                               className={`w-14 text-right rounded px-1 py-0.5 text-[10px] font-mono tabular-nums border ${theme.inputClass}`}
                             />
@@ -610,8 +610,8 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                         type="number"
                         min="1"
                         max="30"
-                        value={tier.basket?.min_items ?? parsedConfig.simulation?.basket?.min_items ?? 1}
-                        onChange={(e) => updateField(['tiers', tierKey, 'basket', 'min_items'], Number(e.target.value))}
+                        value={persona.basket?.min_items ?? parsedConfig.simulation?.basket?.min_items ?? 1}
+                        onChange={(e) => updateField(['personas', personaKey, 'basket', 'min_items'], Number(e.target.value))}
                         className={`w-full rounded px-2 py-1 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                       />
                     </div>
@@ -621,8 +621,8 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                         type="number"
                         min="1"
                         max="50"
-                        value={tier.basket?.max_items ?? parsedConfig.simulation?.basket?.max_items ?? 12}
-                        onChange={(e) => updateField(['tiers', tierKey, 'basket', 'max_items'], Number(e.target.value))}
+                        value={persona.basket?.max_items ?? parsedConfig.simulation?.basket?.max_items ?? 12}
+                        onChange={(e) => updateField(['personas', personaKey, 'basket', 'max_items'], Number(e.target.value))}
                         className={`w-full rounded px-2 py-1 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                       />
                     </div>
@@ -633,9 +633,9 @@ export const TiersPanel: React.FC<TiersPanelProps> = ({
                         step="0.1"
                         min="0.1"
                         max="10"
-                        value={tier.quantity_model?.base_lambda ?? parsedConfig.simulation?.quantity_model?.base_lambda ?? 1.0}
+                        value={persona.quantity_model?.base_lambda ?? parsedConfig.simulation?.quantity_model?.base_lambda ?? 1.0}
                         onChange={(e) =>
-                          updateField(['tiers', tierKey, 'quantity_model', 'base_lambda'], parseFloat(e.target.value))
+                          updateField(['personas', personaKey, 'quantity_model', 'base_lambda'], parseFloat(e.target.value))
                         }
                         className={`w-full rounded px-2 py-1 text-xs font-mono tabular-nums border ${theme.inputClass}`}
                       />

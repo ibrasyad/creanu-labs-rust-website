@@ -1,8 +1,0 @@
-# Tier configurations are now loaded from individual files in config/tiers/ directory
-# To add a new tier:
-# 1. Copy config/tiers/_template.yaml to config/tiers/your_tier_name.yaml
-# 2. Replace "template" with your tier name
-# 3. Customize the values as needed
-# 4. Save - the configuration will be automatically loaded on next run
-
-# This file is kept for reference only

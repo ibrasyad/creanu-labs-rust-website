@@ -1,0 +1,8 @@
+# Persona configurations are now loaded from individual files in config/personas/ directory
+# To add a new persona:
+# 1. Copy config/personas/_template.yaml to config/personas/your_persona_name.yaml
+# 2. Replace "template" with your persona name
+# 3. Customize the values as needed
+# 4. Save - the configuration will be automatically loaded on next run
+
+# This file is kept for reference only

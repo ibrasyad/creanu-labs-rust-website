@@ -5,6 +5,7 @@ import hashlib
 import os
 import random
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -76,8 +77,11 @@ def get_month_name(date_str):
     return parse_date(date_str).strftime("%B").lower()
 
 
-def generate_catalog_parquet(output_path="output/catalog.parquet"):
+def generate_catalog_parquet(output_path=None):
     from .config import get_catalog
+
+    if output_path is None:
+        output_path = str(Path(__file__).resolve().parent.parent / "output/catalog.parquet")
 
     rows = []
     for category, subcategories in get_catalog().items():

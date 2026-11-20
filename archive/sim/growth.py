@@ -1,5 +1,5 @@
 """Growth multipliers applied to behavioral rates."""
-from .config import get_tiers
+from .config import get_personas
 
 
 def get_simulation_year(date, simulation_start):
@@ -18,17 +18,17 @@ def _value(mapping, *keys):
     return float(current) if current is not None else 1.0
 
 
-def get_growth_multiplier(*, date, simulation_start, growth_cfg, tier_name, metric):
+def get_growth_multiplier(*, date, simulation_start, growth_cfg, persona_name, metric):
     """Compose global, profile, yearly-global and yearly-profile multipliers."""
     simulation_year = get_simulation_year(date, simulation_start)
     yearly_cfg = growth_cfg.get("yearly", {})
     year_key = f"year_{simulation_year}"
     yearly = yearly_cfg.get(year_key, yearly_cfg.get("year_8_plus", {}))
-    profile = get_tiers().get(tier_name, {}).get("profile", "balanced")
+    profile = get_personas().get(persona_name, {}).get("profile", "balanced")
     base = growth_cfg.get("base", {})
     return (
         _value(base, "overall", metric)
-        * _value(base, "tier_profiles", profile, metric)
+        * _value(base, "persona_profiles", profile, metric)
         * _value(yearly, "overall", metric)
         * _value(yearly, "profile_multipliers", profile, metric)
     )

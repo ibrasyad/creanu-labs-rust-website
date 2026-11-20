@@ -1,12 +1,12 @@
 # =============================================================================
-# RANDOM TIER CONFIGURATION
+# RANDOM PERSONA CONFIGURATION
 # =============================================================================
 # Regular customers with average purchasing patterns
 # Profile: balanced | Priority: medium
 # =============================================================================
 
 random:
-  # ==================== TIER METADATA ====================
+  # ==================== PERSONA METADATA ====================
   profile:     balanced
   description: "Regular customers with average purchasing patterns"
 

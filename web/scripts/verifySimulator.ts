@@ -34,28 +34,28 @@ for (const preset of PRESET_SCENARIOS) {
 // 3. Verify YAML diffing accurately captures parameter overrides
 const modifiedCfg = yaml.load(DEFAULT_CONFIG_YAML) as any;
 modifiedCfg.simulation.random_seed = 999999;
-modifiedCfg.tiers.family_shoppers.base_user = 42;
+modifiedCfg.personas.family_shoppers.base_user = 42;
 const diffResult = diffYamlConfigs(DEFAULT_CONFIG_YAML, yaml.dump(modifiedCfg));
 assert.equal(diffResult.parseError, null);
 const diffPaths = diffResult.entries.map((e) => e.path);
 assert.ok(diffPaths.includes('simulation.random_seed'), 'Expected simulation.random_seed in diff');
-assert.ok(diffPaths.includes('tiers.family_shoppers.base_user'), 'Expected tiers.family_shoppers.base_user in diff');
+assert.ok(diffPaths.includes('personas.family_shoppers.base_user'), 'Expected personas.family_shoppers.base_user in diff');
 
 // 4. Verify share URL encoding and round-trip hydration
-const shareUrl = buildShareUrl('cafe_restock', yaml.dump(modifiedCfg), 'https://creanu.example/');
+const shareUrl = buildShareUrl('cafe_restock', yaml.dump(modifiedCfg), 'https://sim.ibnulab.com/');
 const parsedUrl = new URL(shareUrl);
 const hydrated = hydrateScenarioFromUrl(parsedUrl.search);
 assert.equal(hydrated.presetId, 'cafe_restock');
 assert.equal(hydrated.error, null);
 const hydratedParsed = yaml.load(hydrated.configYaml) as any;
 assert.equal(hydratedParsed.simulation.random_seed, 999999);
-assert.equal(hydratedParsed.tiers.family_shoppers.base_user, 42);
+assert.equal(hydratedParsed.personas.family_shoppers.base_user, 42);
 
-// 5. Verify custom tier demographics, permanent ongoing campaigns, and exact date campaigns
+// 5. Verify custom persona demographics, permanent ongoing campaigns, and exact date campaigns
 const customCfg = yaml.load(DEFAULT_CONFIG_YAML) as any;
 customCfg.date.start_date = '2026-01-01';
 customCfg.date.end_date = '2026-01-03';
-customCfg.tiers = {
+customCfg.personas = {
   vip_cafe: {
     profile: 'balanced',
     base_user: 15,

@@ -5,7 +5,7 @@ Includes validation and error handling for configuration files.
 import yaml
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class ConfigError(Exception):
@@ -99,80 +99,80 @@ def validate_catalog(catalog_dict):
                     )
 
 
-def validate_tiers(tiers_dict):
+def validate_personas(personas_dict):
     """
-    Validate tiers configuration structure.
+    Validate personas configuration structure.
     
     Args:
-        tiers_dict: Tiers configuration dict
+        personas_dict: Personas configuration dict
         
     Raises:
-        ConfigError: If tiers are invalid
+        ConfigError: If personas are invalid
     """
-    if not isinstance(tiers_dict, dict) or not tiers_dict:
-        raise ConfigError("Tiers must be a non-empty dictionary")
+    if not isinstance(personas_dict, dict) or not personas_dict:
+        raise ConfigError("Personas must be a non-empty dictionary")
     
     valid_profiles = {'conservative', 'aggressive', 'balanced'}
     valid_priorities = {'low', 'medium', 'high'}
     
-    for tier_name, tier_config in tiers_dict.items():
-        if not isinstance(tier_config, dict):
-            raise ConfigError(f"Tier '{tier_name}' configuration must be a dict")
+    for persona_name, persona_config in personas_dict.items():
+        if not isinstance(persona_config, dict):
+            raise ConfigError(f"Persona '{persona_name}' configuration must be a dict")
         
         # Validate profile metadata (REQUIRED)
-        if 'profile' not in tier_config:
-            raise ConfigError(f"Tier '{tier_name}' must specify a profile")
+        if 'profile' not in persona_config:
+            raise ConfigError(f"Persona '{persona_name}' must specify a profile")
         
-        profile = tier_config['profile']
+        profile = persona_config['profile']
         if profile not in valid_profiles:
-            raise ConfigError(f"Tier '{tier_name}' has invalid profile '{profile}'. Must be one of: {valid_profiles}")
+            raise ConfigError(f"Persona '{persona_name}' has invalid profile '{profile}'. Must be one of: {valid_profiles}")
         
         # Validate priority metadata (optional)
-        if 'priority' in tier_config:
-            priority = tier_config['priority']
+        if 'priority' in persona_config:
+            priority = persona_config['priority']
             if priority not in valid_priorities:
-                raise ConfigError(f"Tier '{tier_name}' has invalid priority '{priority}'. Must be one of: {valid_priorities}")
+                raise ConfigError(f"Persona '{persona_name}' has invalid priority '{priority}'. Must be one of: {valid_priorities}")
         
         # Validate description (optional)
-        if 'description' in tier_config:
-            description = tier_config['description']
+        if 'description' in persona_config:
+            description = persona_config['description']
             if not isinstance(description, str):
-                raise ConfigError(f"Tier '{tier_name}' description must be a string")
+                raise ConfigError(f"Persona '{persona_name}' description must be a string")
         
         # Validate basket config
-        if "basket" in tier_config:
-            basket = tier_config["basket"]
+        if "basket" in persona_config:
+            basket = persona_config["basket"]
             if not isinstance(basket, dict):
-                raise ConfigError(f"Tier '{tier_name}' basket configuration must be a dictionary")
+                raise ConfigError(f"Persona '{persona_name}' basket configuration must be a dictionary")
             
             if "min_items" in basket and "max_items" in basket:
                 min_items = basket["min_items"]
                 max_items = basket["max_items"]
                 
                 if not isinstance(min_items, int) or not isinstance(max_items, int):
-                    raise ConfigError(f"Tier '{tier_name}' basket min_items and max_items must be integers")
+                    raise ConfigError(f"Persona '{persona_name}' basket min_items and max_items must be integers")
                 
                 if min_items < 0 or max_items < 0:
-                    raise ConfigError(f"Tier '{tier_name}' basket item counts cannot be negative")
+                    raise ConfigError(f"Persona '{persona_name}' basket item counts cannot be negative")
                 
                 if min_items > max_items:
                     raise ConfigError(
-                        f"Tier '{tier_name}': min_items ({min_items}) "
+                        f"Persona '{persona_name}': min_items ({min_items}) "
                         f"cannot exceed max_items ({max_items})"
                     )
         
         # Validate visit chance configuration
-        if "visit_chance" in tier_config:
-            visit_chance = tier_config["visit_chance"]
+        if "visit_chance" in persona_config:
+            visit_chance = persona_config["visit_chance"]
             if not isinstance(visit_chance, dict):
-                raise ConfigError(f"Tier '{tier_name}' visit_chance must be a dictionary")
+                raise ConfigError(f"Persona '{persona_name}' visit_chance must be a dictionary")
             
             valid_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
             for day in valid_days:
                 if day in visit_chance:
                     chance = visit_chance[day]
                     if not isinstance(chance, (int, float)) or not (0 <= chance <= 1):
-                        raise ConfigError(f"Tier '{tier_name}' {day} visit chance '{chance}' must be between 0 and 1")
+                        raise ConfigError(f"Persona '{persona_name}' {day} visit chance '{chance}' must be between 0 and 1")
 
 
 def validate_growth_config(growth_dict):
@@ -196,19 +196,19 @@ def validate_growth_config(growth_dict):
     if not isinstance(base, dict):
         raise ConfigError("Growth base configuration must be a dictionary")
     
-    if 'tier_profiles' not in base:
-        raise ConfigError("Growth base configuration must contain 'tier_profiles'")
+    if 'persona_profiles' not in base:
+        raise ConfigError("Growth base configuration must contain 'persona_profiles'")
     
-    # Validate tier profiles
-    tier_profiles = base['tier_profiles']
+    # Validate persona profiles
+    persona_profiles = base['persona_profiles']
     valid_profiles = {'conservative', 'aggressive', 'balanced'}
     valid_metrics = {'new_user', 'visit', 'conversion'}
     required_metrics = {'new_user', 'visit'}  # conversion is optional
     
-    if not isinstance(tier_profiles, dict):
-        raise ConfigError("Growth tier_profiles must be a dictionary")
+    if not isinstance(persona_profiles, dict):
+        raise ConfigError("Growth persona_profiles must be a dictionary")
     
-    for profile_name, profile_config in tier_profiles.items():
+    for profile_name, profile_config in persona_profiles.items():
         if profile_name not in valid_profiles:
             raise ConfigError(f"Invalid growth profile '{profile_name}'. Must be one of: {valid_profiles}")
         
@@ -405,26 +405,26 @@ def validate_funnel_config(funnel):
             raise ConfigError(f"Funnel stage '{stage}' duration must satisfy min <= avg <= max")
 
 
-def _load_tiers_from_directory():
+def _load_personas_from_directory():
     """
-    Load all tier configurations from individual YAML files in config/tiers/ directory.
+    Load all persona configurations from individual YAML files in config/personas/ directory.
     
     Returns:
-        Dict with merged tier configurations
+        Dict with merged persona configurations
         
     Raises:
-        ConfigError: If tier loading fails
+        ConfigError: If persona loading fails
     """
-    tiers_dir = BASE_DIR / "config/tiers"
+    personas_dir = BASE_DIR / "config/personas"
     
-    if not tiers_dir.exists():
-        raise ConfigError(f"Tiers directory not found: {tiers_dir}")
+    if not personas_dir.exists():
+        raise ConfigError(f"Personas directory not found: {personas_dir}")
     
-    merged_tiers = {}
-    yaml_files = sorted(tiers_dir.glob("*.yaml"))
+    merged_personas = {}
+    yaml_files = sorted(personas_dir.glob("*.yaml"))
     
     if not yaml_files:
-        raise ConfigError(f"No YAML files found in {tiers_dir}")
+        raise ConfigError(f"No YAML files found in {personas_dir}")
     
     for yaml_file in yaml_files:
         # Skip template file
@@ -432,20 +432,20 @@ def _load_tiers_from_directory():
             continue
         
         try:
-            tier_data = load_yaml(yaml_file)
-            if isinstance(tier_data, dict):
-                merged_tiers.update(tier_data)
+            persona_data = load_yaml(yaml_file)
+            if isinstance(persona_data, dict):
+                merged_personas.update(persona_data)
             else:
-                raise ConfigError(f"Tier file {yaml_file.name} must contain a dictionary")
+                raise ConfigError(f"Persona file {yaml_file.name} must contain a dictionary")
         except ConfigError:
             raise
         except Exception as e:
-            raise ConfigError(f"Error loading tier file {yaml_file.name}: {e}")
+            raise ConfigError(f"Error loading persona file {yaml_file.name}: {e}")
     
-    if not merged_tiers:
-        raise ConfigError(f"No tier configurations found in {tiers_dir}")
+    if not merged_personas:
+        raise ConfigError(f"No persona configurations found in {personas_dir}")
     
-    return merged_tiers
+    return merged_personas
 
 
 def _load_and_validate_configs():
@@ -453,7 +453,7 @@ def _load_and_validate_configs():
     Load and validate all configuration files.
     
     Returns:
-        Tuple of (catalog, tiers, simulation, date_config)
+        Tuple of (catalog, personas, simulation, date_config, funnel, growth, event)
         
     Raises:
         ConfigError: If any configuration is invalid
@@ -461,7 +461,7 @@ def _load_and_validate_configs():
     try:
         # Load all configs
         catalog_data = load_yaml(BASE_DIR / "config/catalog.yaml")
-        tiers = _load_tiers_from_directory()
+        personas = _load_personas_from_directory()
         sim_data = load_yaml(BASE_DIR / "config/simulation.yaml")
         date_data = load_yaml(BASE_DIR / "config/date.yaml")
         funnel_data = load_yaml(BASE_DIR / "config/funnel.yaml")
@@ -479,8 +479,8 @@ def _load_and_validate_configs():
         # Validate structure
         if not catalog:
             raise ConfigError("'catalog' key missing from catalog.yaml")
-        if not tiers:
-            raise ConfigError("No tiers found in config/tiers/ directory")
+        if not personas:
+            raise ConfigError("No personas found in config/personas/ directory")
         if not simulation:
             raise ConfigError("'simulation' key missing from simulation.yaml")
         if not date_config:
@@ -494,14 +494,14 @@ def _load_and_validate_configs():
         
         # Validate content
         validate_catalog(catalog)
-        validate_tiers(tiers)
+        validate_personas(personas)
         validate_date_config(date_config)
         validate_simulation_config(simulation, catalog)
         validate_funnel_config(funnel)
         validate_growth_config(growth)
         validate_event_config(event)
         
-        return catalog, tiers, simulation, date_config, funnel, growth, event
+        return catalog, personas, simulation, date_config, funnel, growth, event
         
     except ConfigError:
         raise
@@ -511,7 +511,7 @@ def _load_and_validate_configs():
 
 # Load all configs at module level with validation
 try:
-    _catalog, _tiers, _sim, _date_config, _funnel, _growth, _event = _load_and_validate_configs()
+    _catalog, _personas, _sim, _date_config, _funnel, _growth, _event = _load_and_validate_configs()
 except ConfigError as e:
     raise SystemExit(f"Configuration Error: {e}")
 
@@ -527,14 +527,14 @@ def get_catalog():
     return _catalog
 
 
-def get_tiers():
+def get_personas():
     """
-    Get customer tier configurations.
+    Get customer persona configurations.
     
     Returns:
-        Dict with tier names as keys, tier configs as values
+        Dict with persona names as keys, persona configs as values
     """
-    return _tiers
+    return _personas
 
 
 def get_simulation():
@@ -566,34 +566,34 @@ def get_event_config():
     return _event
 
 
-def get_tiers_by_profile(profile_name):
+def get_personas_by_profile(profile_name):
     """
-    Get all tiers that match a specific profile.
+    Get all personas that match a specific profile.
     
     Args:
         profile_name: Profile name (conservative, aggressive, balanced)
         
     Returns:
-        Dict of tier_name -> tier_config for matching tiers
+        Dict of persona_name -> persona_config for matching personas
     """
-    matching_tiers = {}
-    for tier_name, tier_config in _tiers.items():
-        if tier_config.get('profile') == profile_name:
-            matching_tiers[tier_name] = tier_config
-    return matching_tiers
+    matching_personas = {}
+    for persona_name, persona_config in _personas.items():
+        if persona_config.get('profile') == profile_name:
+            matching_personas[persona_name] = persona_config
+    return matching_personas
 
 
-def apply_growth_multipliers(tiers, growth_config, year):
+def apply_growth_multipliers(personas, growth_config, year):
     """
-    Apply growth multipliers to tiers based on their profiles.
+    Apply growth multipliers to personas based on their profiles.
     
     Args:
-        tiers: Dict of tier configurations
+        personas: Dict of persona configurations
         growth_config: Growth configuration dict
         year: Year number (positive integer)
         
     Returns:
-        Dict with tier_name -> {new_user, visit, conversion} multipliers
+        Dict with persona_name -> {new_user, visit, conversion} multipliers
         
     Raises:
         ValueError: If year is invalid
@@ -621,23 +621,23 @@ def apply_growth_multipliers(tiers, growth_config, year):
         raise ConfigError("Growth config must be a dictionary")
     
     # Get base profile multipliers
-    base_profiles = growth_config.get('base', {}).get('tier_profiles', {})
+    base_profiles = growth_config.get('base', {}).get('persona_profiles', {})
     if not isinstance(base_profiles, dict):
-        raise ConfigError("Base tier_profiles must be a dictionary")
+        raise ConfigError("Base persona_profiles must be a dictionary")
     
     # Get yearly multipliers if available
     yearly_config = growth_config.get('yearly', {}).get(year_key, {})
     yearly_multipliers = yearly_config.get('profile_multipliers', {}) if isinstance(yearly_config, dict) else {}
     
-    tier_multipliers = {}
+    persona_multipliers = {}
     
-    for tier_name, tier_config in tiers.items():
-        if not isinstance(tier_config, dict):
-            continue  # Skip invalid tier configs
+    for persona_name, persona_config in personas.items():
+        if not isinstance(persona_config, dict):
+            continue  # Skip invalid persona configs
             
-        profile = tier_config.get('profile')
+        profile = persona_config.get('profile')
         if not profile:
-            raise ConfigError(f"Tier '{tier_name}' missing required 'profile' field")
+            raise ConfigError(f"Persona '{persona_name}' missing required 'profile' field")
         
         # Start with base profile values
         base_multipliers = base_profiles.get(profile, DEFAULT_PROFILE_MULTIPLIERS)
@@ -658,28 +658,28 @@ def apply_growth_multipliers(tiers, growth_config, year):
                         raise ConfigError(f"Invalid multiplier value for {metric}: {value}. Must be non-negative number.")
         
         # Combine base and yearly multipliers
-        tier_multipliers[tier_name] = {
+        persona_multipliers[persona_name] = {
             'new_user': base_multipliers.get('new_user', 1.0) * year_multiplier.get('new_user', 1.0),
             'visit': base_multipliers.get('visit', 1.0) * year_multiplier.get('visit', 1.0),
             'conversion': base_multipliers.get('conversion', 1.0) * year_multiplier.get('conversion', 1.0)
         }
     
-    return tier_multipliers
+    return persona_multipliers
 
 
-def apply_event_effects(tiers, event_config, current_year, current_month):
+def apply_event_effects(personas, event_config, current_year, current_month):
     """
-    Apply event effects to tiers based on their profiles.
+    Apply event effects to personas based on their profiles.
     
     Args:
-        tiers: Dict of tier configurations
+        personas: Dict of persona configurations
         event_config: Event configuration dict
         current_year: Current year number
         current_month: Current month number (1-12)
         
     Returns:
-        Dict with tier_name -> {new_user, visit, conversion} event multipliers
-        Dict with tier_name -> {funnel_stage: multiplier} for nested effects
+        Dict with persona_name -> {new_user, visit, conversion} event multipliers
+        Dict with persona_name -> {funnel_stage: multiplier} for nested effects
     """
     # Input validation
     if not isinstance(current_year, int) or current_year < 1:
@@ -691,13 +691,13 @@ def apply_event_effects(tiers, event_config, current_year, current_month):
     nested_effects = {}
     
     # Initialize with no effects
-    for tier_name in tiers:
-        event_effects[tier_name] = {
+    for persona_name in personas:
+        event_effects[persona_name] = {
             'new_user': 1.0,
             'visit': 1.0,
             'conversion': 1.0
         }
-        nested_effects[tier_name] = {}
+        nested_effects[persona_name] = {}
     
     # Find active events
     for event_name, event_data in event_config.items():
@@ -721,22 +721,22 @@ def apply_event_effects(tiers, event_config, current_year, current_month):
             
             # Apply overall effects
             overall = event_data.get('overall', {})
-            for tier_name in event_effects:
+            for persona_name in event_effects:
                 for metric in ['new_user', 'visit', 'conversion']:
                     if metric in overall and isinstance(overall[metric], (int, float)):
-                        event_effects[tier_name][metric] *= overall[metric]
+                        event_effects[persona_name][metric] *= overall[metric]
             
             # Apply profile-based effects
             profiles = event_data.get('profiles', {})
-            for tier_name, tier_config in tiers.items():
-                profile = tier_config.get('profile', 'balanced')
+            for persona_name, persona_config in personas.items():
+                profile = persona_config.get('profile', 'balanced')
                 if profile in profiles:
                     profile_effects = profiles[profile]
                     
                     # Handle direct metrics (new_user, visit, conversion)
                     for metric in ['new_user', 'visit', 'conversion']:
                         if metric in profile_effects and isinstance(profile_effects[metric], (int, float)):
-                            event_effects[tier_name][metric] *= profile_effects[metric]
+                            event_effects[persona_name][metric] *= profile_effects[metric]
                     
                     # Handle nested effects (like funnel-specific conversions)
                     for key, value in profile_effects.items():
@@ -744,8 +744,8 @@ def apply_event_effects(tiers, event_config, current_year, current_month):
                             # Store nested effects for application by specific modules
                             for nested_key, nested_value in value.items():
                                 if isinstance(nested_value, (int, float)):
-                                    if nested_key not in nested_effects[tier_name]:
-                                        nested_effects[tier_name][nested_key] = 1.0
-                                    nested_effects[tier_name][nested_key] *= nested_value
+                                    if nested_key not in nested_effects[persona_name]:
+                                        nested_effects[persona_name][nested_key] = 1.0
+                                    nested_effects[persona_name][nested_key] *= nested_value
     
     return event_effects, nested_effects

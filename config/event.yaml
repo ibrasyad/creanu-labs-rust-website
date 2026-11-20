@@ -6,8 +6,8 @@
 # - description: Brief explanation of the event
 # - year: Simulation year when event occurs
 # - start_month/end_month: Event duration (null = ongoing)
-# - overall: Default multipliers for all tiers
-# - tiers: Specific tier overrides (optional)
+# - overall: Default multipliers for all personas
+# - personas: Specific persona overrides (optional)
 # - profiles: Profile-based targeting (optional)
 # =============================================================================
 
@@ -20,7 +20,7 @@ event:
     start_month: 1
     end_month:   3
     
-    # Default multipliers for all tiers
+    # Default multipliers for all personas
     overall:
       new_user:  1.2   # +40% new user acquisition
       visit:     1.3   # +50% visit frequency
@@ -38,7 +38,7 @@ event:
     overall:
       visit: 1.15   # +15% visit frequency
     
-    # Profile-based targeting instead of specific tiers
+    # Profile-based targeting instead of specific personas
     profiles:
       conservative:
         visit:      1.4   # +40% visits for budget-conscious users
@@ -52,7 +52,7 @@ event:
     start_month: 5
     end_month:   null   # Ongoing improvement
     
-    # Profile-based targeting instead of specific tiers
+    # Profile-based targeting instead of specific personas
     profiles:
       aggressive:
         conversion:
@@ -71,8 +71,8 @@ event:
 #     new_user: 1.4
 #     visit: 1.2
 #     conversion: 1.2
-#   # Tier-specific overrides (optional)
-#   tiers:
+#   # Persona-specific overrides (optional)
+#   personas:
 #     budget:
 #       new_user: 1.5
 #       visit: 1.5

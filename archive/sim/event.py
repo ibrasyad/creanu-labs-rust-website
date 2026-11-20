@@ -1,5 +1,5 @@
 """Campaign and event multipliers."""
-from .config import get_event_config, get_tiers
+from .config import get_event_config, get_personas
 
 _event = get_event_config()
 
@@ -35,14 +35,14 @@ def get_metric_multiplier(metric_cfg, funnel_step=None):
     return 1.0
 
 
-def get_event_multiplier(simulation_year, current_month, metric, tier=None, funnel_step=None, current_date=None):
-    """Return cumulative active-event effects with tier > profile > overall precedence."""
-    profile = get_tiers().get(tier, {}).get("profile") if tier else None
+def get_event_multiplier(simulation_year, current_month, metric, persona=None, funnel_step=None, current_date=None):
+    """Return cumulative active-event effects with persona > profile > overall precedence."""
+    profile = get_personas().get(persona, {}).get("profile") if persona else None
     multiplier = 1.0
     for event in _event.values():
         if not is_event_active(event, simulation_year, current_month, current_date=current_date):
             continue
-        metric_cfg = event.get("tiers", {}).get(tier, {}).get(metric)
+        metric_cfg = event.get("personas", {}).get(persona, {}).get(metric)
         if metric_cfg is None and profile:
             metric_cfg = event.get("profiles", {}).get(profile, {}).get(metric)
         if metric_cfg is None:

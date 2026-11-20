@@ -1,12 +1,12 @@
 # =============================================================================
-# CUSTOMER TIER TEMPLATE
+# CUSTOMER PERSONA TEMPLATE
 # =============================================================================
 # Copy this file and rename to create new customer segments
-# Replace "template" with your tier name and customize the values
+# Replace "template" with your persona name and customize the values
 # =============================================================================
 
 template:
-  # ==================== TIER METADATA ====================
+  # ==================== PERSONA METADATA ====================
   profile:     conservative
   description: "Budget-conscious students seeking affordable convenience"
 
@@ -111,10 +111,10 @@ template:
 
   # ==================== USER ACQUISITION ====================
  
-  # Initial user count for this tier
+  # Initial user count for this persona
   base_user: 10
 
-  # Number of attempts per day to create new users in this tier
+  # Number of attempts per day to create new users in this persona
   daily_retry: 1
   
   # Probability of creating a new user on each attempt
@@ -193,7 +193,7 @@ template:
 
   # ==================== TRANSACTION PATTERNS ====================
   
-  # Likelihood of this tier being selected for transactions by weekday
+  # Likelihood of this persona being selected for transactions by weekday
   transaction_weight:
     monday:    10
     tuesday:   10

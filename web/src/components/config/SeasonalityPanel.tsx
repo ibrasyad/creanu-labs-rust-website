@@ -130,7 +130,7 @@ export const SeasonalityPanel: React.FC<SeasonalityPanelProps> = ({
             Global Weekday Visit Defaults
           </h4>
           <p className={`text-[11px] ${theme.mutedClass}`}>
-            Fallback daily visit probability used when a customer tier does not define its own weekday schedule.
+            Fallback daily visit probability used when a customer persona does not define its own weekday schedule.
           </p>
         </div>
 
@@ -165,7 +165,7 @@ export const SeasonalityPanel: React.FC<SeasonalityPanelProps> = ({
             Fallback Basket &amp; Quantity Defaults (simulation.yaml)
           </h4>
           <p className={`text-[11px] ${theme.mutedClass}`}>
-            Used only when a customer tier does not define its own basket bounds or base quantity λ.
+            Used only when a customer persona does not define its own basket bounds or base quantity λ.
           </p>
         </div>
 

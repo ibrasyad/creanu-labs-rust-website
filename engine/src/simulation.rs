@@ -10,7 +10,7 @@ use crate::models::{
     CatalogItemRecord, DailyMetric, FunnelEventRecord, SimulationOutput, SimulationSummary,
     TransactionItemRecord, TransactionRecord, UserRecord,
 };
-use crate::user::{generate_base_users, generate_user_record, roll_new_users_for_tier};
+use crate::user::{generate_base_users, generate_user_record, roll_new_users_for_persona};
 use crate::utils::{apply_noise, get_day_of_week, get_month_name, seed_for_date};
 
 pub type ProgressCallback = Box<dyn Fn(usize, usize, &str)>;
@@ -55,7 +55,7 @@ fn get_growth_multiplier(
         if let Some(overall) = base.overall.as_ref() {
             mult *= metric_from_growth(overall, metric, step);
         }
-        if let Some(profile_gm) = base.tier_profiles.get(profile) {
+        if let Some(profile_gm) = base.persona_profiles.get(profile) {
             mult *= metric_from_growth(profile_gm, metric, step);
         }
     }
@@ -105,7 +105,7 @@ fn get_event_multiplier(
     sim_year: u32,
     month: u32,
     date_str: &str,
-    tier_name: &str,
+    persona_name: &str,
     profile: &str,
     metric: &str,
     step: Option<&str>,
@@ -125,9 +125,9 @@ fn get_event_multiplier(
         }
 
         let target = campaign
-            .tiers
+            .personas
             .as_ref()
-            .and_then(|t| t.get(tier_name))
+            .and_then(|t| t.get(persona_name))
             .or_else(|| campaign.profiles.as_ref().and_then(|p| p.get(profile)))
             .or(campaign.overall.as_ref());
 
@@ -210,8 +210,8 @@ pub fn run_simulation(
     let mut product_units: HashMap<String, (u64, f64)> = HashMap::new();
     let mut funnel_step_counts: HashMap<String, usize> = HashMap::new();
 
-    let mut tier_names: Vec<String> = config.tiers.keys().cloned().collect();
-    tier_names.sort();
+    let mut persona_names: Vec<String> = config.personas.keys().cloned().collect();
+    persona_names.sort();
 
     // 2. Iterate day by day
     while current_date <= end_date {
@@ -235,24 +235,24 @@ pub fn run_simulation(
             &mut rng,
         );
 
-        // A. Acquire new users for today (deterministic sorted tier order)
+        // A. Acquire new users for today (deterministic sorted persona order)
         let mut daily_new_users = 0;
-        for tier_name in &tier_names {
-            let tier_cfg = &config.tiers[tier_name];
-            let new_user_mult = get_growth_multiplier(config, sim_year, &tier_cfg.profile, "new_user", None)
+        for persona_name in &persona_names {
+            let persona_cfg = &config.personas[persona_name];
+            let new_user_mult = get_growth_multiplier(config, sim_year, &persona_cfg.profile, "new_user", None)
                 * get_event_multiplier(
                     config,
                     sim_year,
                     current_month_num,
                     &date_str,
-                    tier_name,
-                    &tier_cfg.profile,
+                    persona_name,
+                    &persona_cfg.profile,
                     "new_user",
                     None,
                 );
-            let new_count = roll_new_users_for_tier(tier_cfg, current_date, new_user_mult, &mut rng);
+            let new_count = roll_new_users_for_persona(persona_cfg, current_date, new_user_mult, &mut rng);
             for _ in 0..new_count {
-                let new_user = generate_user_record(tier_name, tier_cfg, user_counter, &date_str, &mut rng);
+                let new_user = generate_user_record(persona_name, persona_cfg, user_counter, &date_str, &mut rng);
                 users.push(new_user);
                 user_counter += 1;
                 daily_new_users += 1;
@@ -272,7 +272,7 @@ pub fn run_simulation(
         // Iterate through all current users
         for user_idx in 0..users.len() {
             let user = &users[user_idx];
-            let tier_cfg = match config.tiers.get(&user.tier) {
+            let persona_cfg = match config.personas.get(&user.persona) {
                 Some(cfg) => cfg,
                 None => continue,
             };
@@ -284,25 +284,25 @@ pub fn run_simulation(
             let decay = get_visit_decay_multiplier(days_elapsed, &config.simulation.visit_decay);
 
             let visit_mult = monthly_volume_mult
-                * get_growth_multiplier(config, sim_year, &tier_cfg.profile, "visit", None)
+                * get_growth_multiplier(config, sim_year, &persona_cfg.profile, "visit", None)
                 * get_event_multiplier(
                     config,
                     sim_year,
                     current_month_num,
                     &date_str,
-                    &user.tier,
-                    &tier_cfg.profile,
+                    &user.persona,
+                    &persona_cfg.profile,
                     "visit",
                     None,
                 );
 
-            if rolls_landing_page(config, tier_cfg, current_date, decay, visit_mult, &mut rng) {
+            if rolls_landing_page(config, persona_cfg, current_date, decay, visit_mult, &mut rng) {
                 let session_id = format!("{}-{:08}", date_prefix, session_counter);
                 session_counter += 1;
                 day_visitors += 1;
                 active_today_users.push(user_idx);
 
-                let conv_growth = get_growth_multiplier(config, sim_year, &tier_cfg.profile, "conversion", None);
+                let conv_growth = get_growth_multiplier(config, sim_year, &persona_cfg.profile, "conversion", None);
                 let step_conv_mults = [
                     conv_growth
                         * get_event_multiplier(
@@ -310,8 +310,8 @@ pub fn run_simulation(
                             sim_year,
                             current_month_num,
                             &date_str,
-                            &user.tier,
-                            &tier_cfg.profile,
+                            &user.persona,
+                            &persona_cfg.profile,
                             "conversion",
                             Some("landing_page"),
                         ),
@@ -321,8 +321,8 @@ pub fn run_simulation(
                             sim_year,
                             current_month_num,
                             &date_str,
-                            &user.tier,
-                            &tier_cfg.profile,
+                            &user.persona,
+                            &persona_cfg.profile,
                             "conversion",
                             Some("product_view"),
                         ),
@@ -332,8 +332,8 @@ pub fn run_simulation(
                             sim_year,
                             current_month_num,
                             &date_str,
-                            &user.tier,
-                            &tier_cfg.profile,
+                            &user.persona,
+                            &persona_cfg.profile,
                             "conversion",
                             Some("add_to_cart"),
                         ),
@@ -343,8 +343,8 @@ pub fn run_simulation(
                             sim_year,
                             current_month_num,
                             &date_str,
-                            &user.tier,
-                            &tier_cfg.profile,
+                            &user.persona,
+                            &persona_cfg.profile,
                             "conversion",
                             Some("checkout"),
                         ),
@@ -352,8 +352,8 @@ pub fn run_simulation(
 
                 let (journey_events, paid, paid_dt) = simulate_user_journey(
                     config,
-                    &user.tier,
-                    tier_cfg,
+                    &user.persona,
+                    persona_cfg,
                     &user.user_id,
                     &session_id,
                     current_date,
@@ -372,8 +372,8 @@ pub fn run_simulation(
                         let trx_id = format!("trx-{}", session_id);
                         let basket = generate_basket(
                             config,
-                            &user.tier,
-                            tier_cfg,
+                            &user.persona,
+                            persona_cfg,
                             &user.user_id,
                             current_date,
                             paid_time_str,
@@ -407,7 +407,7 @@ pub fn run_simulation(
                                 user_id: user.user_id.clone(),
                                 trx_id,
                                 date: paid_time_str.clone(),
-                                tier: user.tier.clone(),
+                                persona: user.persona.clone(),
                                 total_price: trx_total,
                             });
 
@@ -475,7 +475,7 @@ pub fn run_simulation(
 
     let summary = SimulationSummary {
         total_users: users.len(),
-        new_users: users.len().saturating_sub(config.tiers.values().map(|t| t.base_user).sum()),
+        new_users: users.len().saturating_sub(config.personas.values().map(|p| p.base_user).sum()),
         total_sessions,
         total_transactions,
         total_items_sold,
@@ -539,7 +539,7 @@ funnel:
     conversion_rate: 1.0
   paid:
     conversion_rate: 1.0
-tiers:
+personas:
   family_shoppers:
     base_user: 10
     visit_chance:
@@ -564,7 +564,7 @@ tiers:
     }
 
     #[test]
-    fn multi_tier_growth_and_event_runs_deterministically() {
+    fn multi_persona_growth_and_event_runs_deterministically() {
         let yaml = r#"
 simulation:
   random_seed: 99
@@ -611,7 +611,7 @@ event:
       conservative:
         conversion:
           landing_page: 1.2
-tiers:
+personas:
   family_shoppers:
     profile: balanced
     base_user: 5
@@ -676,7 +676,7 @@ event:
     end_date: "2027-02-10"
     overall:
       visit: 2.0
-tiers:
+personas:
   family:
     base_user: 1
     category_weight:

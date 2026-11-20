@@ -17,7 +17,7 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
   theme,
 }) => {
   const [expandedTargeting, setExpandedTargeting] = useState<Record<string, boolean>>({});
-  const tierKeys = Object.keys(parsedConfig.tiers || {});
+  const personaKeys = Object.keys(parsedConfig.personas || {});
 
   const addMarketingEvent = () => {
     mutateConfig((cfg) => {
@@ -74,7 +74,7 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
 
   const updateTargetingMetric = (
     evtKey: string,
-    scope: 'profiles' | 'tiers',
+    scope: 'profiles' | 'personas',
     targetKey: string,
     metric: 'visit' | 'new_user',
     rawVal: string
@@ -99,7 +99,7 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
 
   const updateTargetingConversion = (
     evtKey: string,
-    scope: 'profiles' | 'tiers',
+    scope: 'profiles' | 'personas',
     targetKey: string,
     step: string,
     rawVal: string
@@ -341,7 +341,7 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
                 </div>
               </div>
 
-              {/* Collapsible Profile & Tier Targeting */}
+              {/* Collapsible Profile & Persona Targeting */}
               <div className="pt-1 border-t border-inherit/40">
                 <button
                   onClick={() =>
@@ -349,7 +349,7 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
                   }
                   className="w-full flex items-center justify-between py-1 text-[10px] font-semibold uppercase opacity-80 hover:opacity-100"
                 >
-                  <span>Profile &amp; Tier Targeting</span>
+                  <span>Profile &amp; Persona Targeting</span>
                   {targetingOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 </button>
 
@@ -400,16 +400,16 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
                       );
                     })}
 
-                    {tierKeys.length > 0 && (
+                    {personaKeys.length > 0 && (
                       <div className="pt-1 space-y-1.5">
                         <span className={`block text-[10px] font-semibold uppercase ${theme.mutedClass}`}>
-                          Specific Tier Overrides
+                          Specific Persona Overrides
                         </span>
-                        {tierKeys.map((tKey) => {
-                          const tierCfg = evt.tiers?.[tKey];
+                        {personaKeys.map((pKey) => {
+                          const personaCfg = evt.personas?.[pKey];
                           return (
-                            <div key={tKey} className="rounded border border-inherit/50 p-2 space-y-1">
-                              <span className="text-[10px] capitalize font-semibold">{tKey.replace(/_/g, ' ')}</span>
+                            <div key={pKey} className="rounded border border-inherit/50 p-2 space-y-1">
+                              <span className="text-[10px] capitalize font-semibold">{pKey.replace(/_/g, ' ')}</span>
                               <div className="grid grid-cols-2 gap-2">
                                 {(['visit', 'new_user'] as const).map((metric) => (
                                   <label key={metric} className="flex items-center justify-between gap-1 text-[10px]">
@@ -419,9 +419,9 @@ export const EventsPanel: React.FC<EventsPanelProps> = ({
                                       step="0.01"
                                       min="0"
                                       placeholder="—"
-                                      value={tierCfg?.[metric] ?? ''}
+                                      value={personaCfg?.[metric] ?? ''}
                                       onChange={(e) =>
-                                        updateTargetingMetric(evtKey, 'tiers', tKey, metric, e.target.value)
+                                        updateTargetingMetric(evtKey, 'personas', pKey, metric, e.target.value)
                                       }
                                       className={`w-14 text-right rounded px-1 py-0.5 font-mono border ${theme.inputClass}`}
                                     />

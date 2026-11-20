@@ -22,12 +22,12 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     description: 'Surge in Saturday & Sunday traffic with massive baskets (8–15 items) and family staple shopping.',
     badge: 'High AOV',
     configYaml: createPreset((cfg) => {
-      if (cfg.tiers?.family_shoppers) {
-        cfg.tiers.family_shoppers.base_user = 50;
-        cfg.tiers.family_shoppers.basket = { min_items: 8, max_items: 16 };
-        if (cfg.tiers.family_shoppers.visit_chance) {
-          cfg.tiers.family_shoppers.visit_chance.saturday = 0.35;
-          cfg.tiers.family_shoppers.visit_chance.sunday = 0.30;
+      if (cfg.personas?.family_shoppers) {
+        cfg.personas.family_shoppers.base_user = 50;
+        cfg.personas.family_shoppers.basket = { min_items: 8, max_items: 16 };
+        if (cfg.personas.family_shoppers.visit_chance) {
+          cfg.personas.family_shoppers.visit_chance.saturday = 0.35;
+          cfg.personas.family_shoppers.visit_chance.sunday = 0.30;
         }
       }
     }),
@@ -38,12 +38,12 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     description: 'Heavy preference for leafy greens, berries, and citrus with frequent daily store visits.',
     badge: 'High Frequency',
     configYaml: createPreset((cfg) => {
-      if (cfg.tiers?.health_conscious) {
-        cfg.tiers.health_conscious.base_user = 60;
-        cfg.tiers.health_conscious.daily_new_user_chance = 0.25;
-        if (cfg.tiers.health_conscious.category_weight) {
-          cfg.tiers.health_conscious.category_weight.vegetables = 3.5;
-          cfg.tiers.health_conscious.category_weight.fruits = 2.5;
+      if (cfg.personas?.health_conscious) {
+        cfg.personas.health_conscious.base_user = 60;
+        cfg.personas.health_conscious.daily_new_user_chance = 0.25;
+        if (cfg.personas.health_conscious.category_weight) {
+          cfg.personas.health_conscious.category_weight.vegetables = 3.5;
+          cfg.personas.health_conscious.category_weight.fruits = 2.5;
         }
       }
     }),
@@ -54,9 +54,9 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     description: 'Budget-friendly quick convenience shopping. Rapid checkout, small basket sizes, weekday traffic.',
     badge: 'High Conversion',
     configYaml: createPreset((cfg) => {
-      if (cfg.tiers?.students) {
-        cfg.tiers.students.base_user = 75;
-        cfg.tiers.students.basket = { min_items: 1, max_items: 3 };
+      if (cfg.personas?.students) {
+        cfg.personas.students.base_user = 75;
+        cfg.personas.students.basket = { min_items: 1, max_items: 3 };
       }
       if (cfg.funnel?.checkout) {
         cfg.funnel.checkout.conversion_rate = 0.88;
@@ -88,8 +88,8 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
     description: 'B2B hospitality buyers placing heavy weekday bulk orders for fresh produce, grains, dairy, poultry, and kitchen staples.',
     badge: 'B2B Bulk',
     configYaml: createPreset((cfg) => {
-      if (cfg.tiers?.small_business_owners) {
-        const sbo = cfg.tiers.small_business_owners;
+      if (cfg.personas?.small_business_owners) {
+        const sbo = cfg.personas.small_business_owners;
         sbo.base_user = 18;
         sbo.daily_new_user_chance = 0.08;
         sbo.daily_new_user_chance_weekend = 0.06;

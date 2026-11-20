@@ -28,16 +28,16 @@ const growthDoc = yaml.load(growthRaw);
 const simRaw = fs.readFileSync(path.join(configDir, 'simulation.yaml'), 'utf8');
 const simDoc = yaml.load(simRaw);
 
-// 7. Read tiers/
-const tiersDir = path.join(configDir, 'tiers');
-const tierFiles = fs.readdirSync(tiersDir).filter(f => f.endsWith('.yaml') && !f.startsWith('_'));
-const tiersDoc = {};
+// 7. Read personas/
+const personasDir = path.join(configDir, 'personas');
+const personaFiles = fs.readdirSync(personasDir).filter(f => f.endsWith('.yaml') && !f.startsWith('_'));
+const personasDoc = {};
 
-for (const tf of tierFiles) {
-  const content = fs.readFileSync(path.join(tiersDir, tf), 'utf8');
+for (const pf of personaFiles) {
+  const content = fs.readFileSync(path.join(personasDir, pf), 'utf8');
   const parsed = yaml.load(content);
   if (parsed && typeof parsed === 'object') {
-    Object.assign(tiersDoc, parsed);
+    Object.assign(personasDoc, parsed);
   }
 }
 
@@ -53,7 +53,7 @@ const fullConfig = {
   funnel: funnelDoc.funnel || funnelDoc,
   growth: growthDoc.growth || growthDoc,
   event: eventDoc.event || eventDoc,
-  tiers: tiersDoc,
+  personas: personasDoc,
 };
 
 const fullYaml = yaml.dump(fullConfig, { indent: 2, noArrayIndent: false, lineWidth: 140 });
@@ -64,5 +64,5 @@ const fileContent = `export const DEFAULT_CONFIG_YAML = ${JSON.stringify(fullYam
 fs.writeFileSync(outPath, fileContent, 'utf8');
 console.log('Successfully bundled full configuration into defaultConfig.ts');
 console.log('Catalog categories:', Object.keys(fullConfig.catalog).length);
-console.log('Tiers count:', Object.keys(fullConfig.tiers).length);
+console.log('Personas count:', Object.keys(fullConfig.personas).length);
 console.log('Date range:', fullConfig.date.start_date, 'to', fullConfig.date.end_date);

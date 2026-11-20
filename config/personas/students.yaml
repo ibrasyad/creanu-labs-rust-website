@@ -1,12 +1,12 @@
 # =============================================================================
-# STUDENTS TIER CONFIGURATION
+# STUDENTS PERSONA CONFIGURATION
 # =============================================================================
 # Budget-conscious convenience seekers
 # Profile: conservative | Priority: low
 # =============================================================================
 
 students:
-  # ==================== TIER METADATA ====================
+  # ==================== PERSONA METADATA ====================
   profile:     conservative
   description: "Budget-conscious students seeking affordable convenience"
 

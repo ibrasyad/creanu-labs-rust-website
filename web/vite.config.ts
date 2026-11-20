@@ -11,10 +11,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     allowedHosts: true,
-    headers: {
-      // Required for SharedArrayBuffer / WebAssembly threads if enabled
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
+    hmr: process.env.GOOGLE_RUNTIME || process.env.DISABLE_HMR === 'true' ? false : true,
   },
 });

@@ -12,28 +12,28 @@
 
 growth:
   # ==================== BASE GROWTH PROFILES ====================
-  # Default growth rates applied to tiers based on their profile metadata
+  # Default growth rates applied to personas based on their profile metadata
   
   base:
-    # Default multipliers for all tiers
+    # Default multipliers for all personas
     overall:
       new_user:  1.0   # Baseline acquisition
       visit:     1.0   # Baseline engagement
       # conversion: 1.0  # Baseline conversion
 
     # Profile-specific growth patterns
-    tier_profiles:
-      conservative:  # Budget-conscious tiers
+    persona_profiles:
+      conservative:  # Budget-conscious personas
         new_user:  0.9   # Slow, steady acquisition
         visit:     1.0   # Consistent engagement
         # conversion: 1.0  # Stable conversion
         
-      aggressive:   # Growth-focused tiers  
+      aggressive:   # Growth-focused personas  
         new_user:  1.1   # +10% faster acquisition
         visit:     1.1   # +10% higher engagement
         # conversion: 1.1  # +10% better conversion
         
-      balanced:     # Steady, reliable tiers
+      balanced:     # Steady, reliable personas
         new_user:  1.0   # 0% moderate acquisition
         visit:     1.05  # +5% engagement
         # conversion: 1.05  # +5% conversion
