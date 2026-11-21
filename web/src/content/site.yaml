@@ -1,5 +1,6 @@
 brand:
   name: "GroceryLab"
+  version: "v1.0.0"
   domain: "sim.ibnulab.com"
   parentDomain: "ibnulab.com"
   footerLabel: "GroceryLab Synthetic Commerce Engine"

@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Copy, Check, RotateCcw, AlertCircle, FileCode } from 'lucide-react';
-import * as yaml from 'js-yaml';
 import { ThemeConfig } from '../types/theme';
 import { DEFAULT_CONFIG_YAML } from '../engine/defaultConfig';
+import { validateSimulationConfig } from '../utils/configValidation';
 
 interface RawYamlEditorProps {
   value: string;
@@ -20,13 +20,9 @@ export const RawYamlEditor: React.FC<RawYamlEditorProps> = ({
   const gutterRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Validate YAML
-  let parseError: string | null = null;
-  try {
-    yaml.load(value);
-  } catch (err: any) {
-    parseError = err.message;
-  }
+  // Validate YAML syntax & schema invariants
+  const validation = validateSimulationConfig(value);
+  const parseError = validation.valid ? null : validation.errors.join(' ');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(value);
@@ -63,7 +59,7 @@ export const RawYamlEditor: React.FC<RawYamlEditorProps> = ({
           {parseError ? (
             <div className="flex items-center gap-1.5 text-xs text-rose-500 font-medium">
               <AlertCircle className="w-3.5 h-3.5" />
-              <span>YAML Syntax Error</span>
+              <span>Config Validation Error</span>
             </div>
           ) : (
             <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium font-mono">

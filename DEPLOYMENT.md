@@ -11,7 +11,7 @@ Follow these exact steps inside **dash.cloudflare.com** to connect GitHub direct
 1. Open [dash.cloudflare.com](https://dash.cloudflare.com) and go to **Compute (Workers)** &rarr; **Workers & Pages**.
 2. Click **Create** (or **Create application**) &rarr; **Import a repository** (Connect to GitHub) and select your repository.
 3. Enter these exact **Build configuration** fields:
-   - **Project / Worker name**: `creanu-labs-simulator` *(matches `"name"` in `web/wrangler.jsonc`—do not change unless creating a brand-new Worker)*
+   - **Project / Worker name**: `grocerylab-simulator` *(matches `"name"` in `web/wrangler.jsonc`)*
    - **Root directory** (under Build paths): `web` *(uses `web/package-lock.json` for `npm clean-install`)*
    - **Build command**: `npm run build:cf`
    - **Deploy command**: `npx wrangler deploy`
@@ -87,7 +87,7 @@ Human-readable copy is decoupled from `.tsx` templates:
 ```jsonc
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "creanu-labs-simulator",
+  "name": "grocerylab-simulator",
   "compatibility_date": "2024-11-01",
   "observability": {
     "enabled": true
@@ -98,3 +98,21 @@ Human-readable copy is decoupled from `.tsx` templates:
   }
 }
 ```
+
+---
+
+## 7. `v1.0.0` Production Sign-Off Checklist (`sim.ibnulab.com`)
+
+Before announcing or tagging `v1.0.0`, confirm each operational item on the live Cloudflare deployment:
+
+1. **Worker & Custom Domain Cutover**:
+   - Confirm the `grocerylab-simulator` Worker is deployed and bound to `https://sim.ibnulab.com/` (and remove/retire any temporary `creanu-labs-simulator` `*.workers.dev` preview if no longer needed).
+   - Disable the `*.workers.dev` subdomain on the production Worker once `sim.ibnulab.com` is live so search engines index only the canonical domain.
+2. **CI/CD & Secrets**:
+   - Confirm `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set in GitHub Actions Secrets and `.github/workflows/deploy-cloudflare.yml` passes all Rust tests, Wasm compilation, cross-engine parity (`verifyParity.ts --require-wasm`), and strict TypeScript checks.
+   - Ensure only one auto-deploy path (GitHub Actions OR Cloudflare Workers Builds) triggers per push to `main`.
+3. **Edge Security & Headers Verification**:
+   - Run `curl -sI https://sim.ibnulab.com/` and verify `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Content-Security-Policy` (`'wasm-unsafe-eval'`, `blob:`, `frame-ancestors`), and `immutable` caching on `/assets/*`.
+4. **Live Browser & Dataset Sanity**:
+   - Open `https://sim.ibnulab.com/` in a fresh browser window, inspect the Dashboard runtime badge to confirm **Rust/Wasm** executed (not TypeScript fallback), toggle Light/Dark mode and refresh to confirm persistence, copy a Share URL and reload it, and download a ZIP export to verify all 5 CSVs + `README_SQL_STARTER.md` load cleanly in DuckDB or PostgreSQL.
+

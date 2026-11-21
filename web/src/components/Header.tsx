@@ -47,16 +47,25 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         {/* Brand & Primary Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between lg:justify-start gap-3 xl:gap-5 min-w-0">
-          <div className="flex items-center gap-2.5 shrink-0">
-            <BrandMark className="h-8 w-8" />
+          <div className="flex items-baseline gap-2 shrink-0">
+            <BrandMark className="h-8 w-8 self-center" />
             <span className="font-bold text-sm tracking-tight whitespace-nowrap">{SITE_CONTENT.brand.name}</span>
+            <span className={`text-[11px] font-mono tabular-nums whitespace-nowrap ${theme.mutedClass}`}>
+              {SITE_CONTENT.brand.version}
+            </span>
           </div>
 
           {/* Primary View Tabs */}
-          <nav className="flex items-center gap-1 p-1 rounded-lg border border-inherit bg-black/5 dark:bg-white/5 overflow-x-auto">
+          <nav
+            role="tablist"
+            aria-label="Primary application views"
+            className="flex items-center gap-1 p-1 rounded-lg border border-inherit bg-black/5 dark:bg-white/5 overflow-x-auto"
+          >
             <button
+              role="tab"
+              aria-selected={activeTab === 'studio'}
               onClick={() => onChangeTab('studio')}
-              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 transition ${
+              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition ${
                 activeTab === 'studio' ? theme.accentClass : 'opacity-70 hover:opacity-100'
               }`}
             >
@@ -65,8 +74,10 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <button
+              role="tab"
+              aria-selected={activeTab === 'dashboard'}
               onClick={() => onChangeTab('dashboard')}
-              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 transition ${
+              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition ${
                 activeTab === 'dashboard' ? theme.accentClass : 'opacity-70 hover:opacity-100'
               }`}
             >
@@ -75,8 +86,10 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <button
+              role="tab"
+              aria-selected={activeTab === 'yaml'}
               onClick={() => onChangeTab('yaml')}
-              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 transition ${
+              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition ${
                 activeTab === 'yaml' ? theme.accentClass : 'opacity-70 hover:opacity-100'
               }`}
             >
@@ -85,8 +98,10 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <button
+              role="tab"
+              aria-selected={activeTab === 'about'}
               onClick={() => onChangeTab('about')}
-              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 transition ${
+              className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition ${
                 activeTab === 'about' ? theme.accentClass : 'opacity-70 hover:opacity-100'
               }`}
             >

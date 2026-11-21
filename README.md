@@ -1,38 +1,60 @@
-# Creanu Labs Simulator
+# GroceryLab (`v1.0.0`)
 
-## Objective
+**GroceryLab** is a browser-native synthetic grocery and retail analytics simulator. Instead of emitting uniform random noise, it models distinct customer personas, weekly and seasonal demand curves, 5-stage checkout funnels, subcategory restock cooldowns, and lognormal IDR pricing inside a non-blocking Web Worker.
 
-I built Creanu Labs to solve a common problem in data analytics: realistic transaction data. When you're learning analytics business intelligence tools, you need data that behaves like real customer behavior, not just random numbers. Though I don't claim this would show perfect real world behavior, it's a good starting point for learning.
+---
 
-## Method
+## Key Capabilities
 
-The system uses a multi-layered simulation approach that models how different customer types actually shop. I segment customers into three main profiles (conservative, balanced, aggressive) with varying group behaviors and distinct shopping patterns, category preferences, and spending habits. Each group has its own probability distributions for basket size, product selection, and purchase frequency.
+- **Visual Config Studio & Raw YAML Editor**: Tune population baselines, persona shopping habits, seasonal multipliers, marketing events, and catalog cooldowns in structured panels or raw YAML.
+- **6 Built-In Grocery Scenarios**: Includes the 90-day steady-state baseline alongside *Weekend Family Supermarket Rush*, *Healthy Living & Organic Wave*, *Student & Young Professional Quick-Bites*, *Cafe & Restaurant Daily Restock*, and *Holiday Harvest Surge*.
+- **Analytics & Baseline Diff Dashboard**: Compare simulated GMV, orders, AOV, conversion rate, category mix, and top SKUs against a horizon-matched baseline with Daily, Weekly, Monthly, and Yearly aggregations.
+- **SQL-Ready ZIP Export**: Download complete, non-truncated CSVs (`user.csv`, `funnel.csv`, `transaction.csv`, `transaction_item.csv`, `catalog.csv`), the active `simulation_config.yaml`, and `README_SQL_STARTER.md` (with `persona` hidden by default for unbiased clustering).
+- **Zero Server Compute Cost**: Runs 100% client-side in a Web Worker using CI-compiled Rust/WebAssembly (`engine/`) with automatic TypeScript simulator fallback (`web/src/engine/simulator.ts`), hosted on Cloudflare Workers Static Assets.
 
-The temporal modeling accounts for weekly patterns (weekend vs weekday shopping) and seasonal variations (like holiday shopping spikes). I also model user lifecycle, including new customer acquisition and how their behavior evolves over time.
+---
 
-## Library
+## Architecture Overview
 
-I built this with Python using pandas for data manipulation, scipy for statistical distributions, and pyarrow for efficient Parquet output. The configuration is entirely YAML-based, making it easy to adjust parameters without touching code. Well, also the biggest reason is that YAML is the only thing I'm familiar with, BUT it is also human-readable and version-controlled friendly.
+| Layer | Directory | Role |
+| :--- | :--- | :--- |
+| **Web Studio** | `web/` | React 19, TypeScript 7 (`strict`), Vite 8, Tailwind CSS v4 (Swiss Light/Dark), Recharts v3, JSZip |
+| **Rust / Wasm Engine** | `engine/` | `lettuce-melon-engine` crate (`serde_yaml`, `rand_chacha`, `sha2`, `wasm-bindgen`) |
+| **Canonical Config** | `config/` | Source YAML files (`catalog`, `date`, `event`, `funnel`, `growth`, `simulation`, `personas/*.yaml`) bundled into `web/src/engine/defaultConfig.ts` |
+| **Python CLI (Archived)** | `archive/` | Historical Parquet/BigQuery batch generator preserved for reference |
 
-## Output
+---
 
-The system generates multiple interconnected datasets:
+## Local Development & Verification
 
-- **Transaction headers** with session metadata and customer persona
-- **Transaction items** with detailed product line items, quantities, and pricing
-- **User analytics** tracking acquisition dates, transaction history, and total spending
-- **Funnel data** for customer journey analysis and conversion tracking
-- **Daily new user acquisition** with persona distribution
+```bash
+# Install web dependencies
+npm --prefix web install
 
-All data is output as Parquet files for efficient storage and fast querying. Ideally, I would like to connect this to a database, but I don't want to spend any cost on this project, so I'll leave it as is using free tools for now
+# Bundle canonical YAML defaults into web/src/engine/defaultConfig.ts
+node web/scripts/bundleConfig.cjs
 
-## Use Case
+# Run simulator determinism, CSV export, validation, and cross-engine parity checks
+bun web/scripts/verifySimulator.ts
+bun web/scripts/verifyParity.ts
 
-I use this primarily for testing data pipelines and analytics systems. It's perfect for:
+# Strict TypeScript lint & development server (port 3000)
+npm --prefix web run lint
+npm --prefix web run dev
 
-- Load testing your database with realistic query patterns
-- Developing and validating BI dashboards
-- Building machine learning models for customer segmentation
-- Demonstrating data engineering capabilities in portfolio projects
+# Production Cloudflare Workers asset build
+npm --prefix web run build:cf
 
-The configurable nature means you can adjust everything from product catalog to customer behavior patterns to match your specific testing needs.
+# Rust engine unit tests (when cargo is installed)
+cargo test --manifest-path engine/Cargo.toml
+```
+
+---
+
+## Further Reading
+
+- [`CHANGELOG.md`](./CHANGELOG.md) — Release notes for `v1.0.0` GA and prior milestones.
+- [`CUSTOMIZATION.md`](./CUSTOMIZATION.md) — Guide to editing YAML catalogs, personas, growth curves, and campaigns.
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Cloudflare Workers (`sim.ibnulab.com`), CSP headers, GitHub Actions CI/CD, and `v1.0.0` sign-off checklist.
+- [`PROJECT_MASTER_PLAN.md`](./PROJECT_MASTER_PLAN.md) — Milestone tracker (`v1.0.0` GA, with Cloudflare D1 community catalog planned for `v1.1.0`).
+- [`RUST_FOR_PYTHONISTAS.md`](./RUST_FOR_PYTHONISTAS.md) — Side-by-side guide mapping the archived Python engine concepts to Rust.

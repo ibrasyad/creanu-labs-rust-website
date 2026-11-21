@@ -41,6 +41,7 @@ export interface TraceOrderStepSpec {
 export interface SiteContent {
   brand: {
     name: string;
+    version: string;
     domain: string;
     parentDomain: string;
     footerLabel: string;

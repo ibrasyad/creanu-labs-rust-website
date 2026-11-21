@@ -1,14 +1,15 @@
 {
-  "name": "creanu-labs-workspace",
+  "name": "grocerylab-workspace",
   "private": true,
   "workspaces": [
     "web"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=lettuce-melon-web",
-    "build": "npm run build --workspace=lettuce-melon-web",
-    "build:cf": "npm run build:cf --workspace=lettuce-melon-web",
-    "preview": "npm run preview --workspace=lettuce-melon-web",
-    "lint": "npm run lint --workspace=lettuce-melon-web"
+    "dev": "npm run dev --workspace=grocerylab-web",
+    "build": "npm run build --workspace=grocerylab-web",
+    "build:cf": "npm run build:cf --workspace=grocerylab-web",
+    "preview": "npm run preview --workspace=grocerylab-web",
+    "lint": "npm run lint --workspace=grocerylab-web",
+    "test": "npm run test --workspace=grocerylab-web"
   }
 }

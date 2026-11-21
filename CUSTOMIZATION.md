@@ -1,17 +1,18 @@
 # Customization Guide
 
-This guide explains how to customize Creanu Labs for your specific needs. The system is designed to be highly configurable through YAML files, so you can adapt it without touching the code. It's not very tidy but it works and should be easier to understand for beginners.
+This guide explains how to customize **GroceryLab** for your specific needs. The system is designed to be highly configurable through YAML files, so you can adapt scenarios directly in the Web Studio, Raw YAML editor, or canonical `config/` files without touching engine code.
 
 ## Quick Overview
 
-All customization happens in the `config/` directory. Each file controls a different aspect of the simulation:
+All canonical defaults live in the `config/` directory. When modifying files in `config/`, run `node web/scripts/bundleConfig.cjs` to regenerate the web bundle defaults:
 
-- `catalog.yaml` - Your product list and pricing (and minor settings like cooldown)
-- `date.yaml` - Time period and transaction volume based on weekday and month patterns
-- `personas/` - Customer persona definitions and behavior patterns
-- `simulation.yaml` - Global defaults
-- `growth.yaml` - User growth patterns (acquisition, visit frequency, conversion)
-- `funnel.yaml` - Customer journey settings
+- `catalog.yaml` - Your product list, IDR pricing, weights, and subcategory cooldowns
+- `date.yaml` - Simulation date bounds and monthly/weekday volume patterns
+- `personas/*.yaml` - Customer persona definitions and shopping behavior patterns
+- `simulation.yaml` - Global fallback defaults, recency `visit_decay`, and duplicate rules
+- `growth.yaml` - Yearly and profile-based growth multipliers
+- `event.yaml` - Promotional campaigns and date/month overrides
+- `funnel.yaml` - Global fallback stage conversion rates, durations, and peak visit hours
 
 ## Product Catalog Customization
 

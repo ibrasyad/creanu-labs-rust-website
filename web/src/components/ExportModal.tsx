@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import JSZip from 'jszip';
 import { X, Download, FileText, Archive, CheckCircle2, EyeOff, Eye } from 'lucide-react';
 import { SimulationOutput } from '../types/simulation';
 import { ThemeConfig } from '../types/theme';
-import { escapeCsvCell } from '../utils/csv';
+import { buildCsvTable } from '../utils/csv';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -133,68 +133,35 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [isZipping, setIsZipping] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [includePersona, setIncludePersona] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !output) return null;
 
-  const generateCSV = (headers: string[], rows: (string | number)[][]): string => {
-    const headerLine = headers.join(',');
-    const bodyLines = rows.map((r) => r.map(escapeCsvCell).join(','));
-    return [headerLine, ...bodyLines].join('\n');
-  };
-
-  const getUserCSV = () => {
-    const headers = includePersona
-      ? ['persona', 'user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date']
-      : ['user_id', 'city', 'gender', 'acquisition_channel', 'registered_date', 'last_active_date'];
-    const rows = output.users.map((u) =>
-      includePersona
-        ? [u.persona, u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date]
-        : [u.user_id, u.city, u.gender, u.acquisition_channel, u.registered_date, u.last_active_date]
-    );
-    return generateCSV(headers, rows);
-  };
-
-  const getTrxCSV = () => {
-    const headers = includePersona
-      ? ['session_id', 'user_id', 'trx_id', 'date', 'persona', 'total_price']
-      : ['session_id', 'user_id', 'trx_id', 'date', 'total_price'];
-    const rows = output.transactions.map((t) =>
-      includePersona
-        ? [t.session_id, t.user_id, t.trx_id, t.date, t.persona, t.total_price]
-        : [t.session_id, t.user_id, t.trx_id, t.date, t.total_price]
-    );
-    return generateCSV(headers, rows);
-  };
-
-  const getItemCSV = () => {
-    const headers = includePersona
-      ? ['trx_id', 'user_id', 'persona', 'date', 'product', 'quantity', 'unit_price', 'total_price']
-      : ['trx_id', 'user_id', 'date', 'product', 'quantity', 'unit_price', 'total_price'];
-    const rows = output.transaction_items.map((i) =>
-      includePersona
-        ? [i.trx_id, i.user_id, i.persona, i.date, i.product, i.quantity, i.unit_price, i.total_price]
-        : [i.trx_id, i.user_id, i.date, i.product, i.quantity, i.unit_price, i.total_price]
-    );
-    return generateCSV(headers, rows);
-  };
-
-  const getFunnelCSV = () => {
-    const headers = includePersona
-      ? ['session_id', 'persona', 'user_id', 'activity', 'activity_datetime']
-      : ['session_id', 'user_id', 'activity', 'activity_datetime'];
-    const rows = output.funnel.map((f) =>
-      includePersona
-        ? [f.session_id, f.persona, f.user_id, f.activity, f.activity_datetime]
-        : [f.session_id, f.user_id, f.activity, f.activity_datetime]
-    );
-    return generateCSV(headers, rows);
-  };
-
-  const getCatalogCSV = () =>
-    generateCSV(
-      ['category', 'subcategory', 'product', 'base_price'],
-      output.catalog.map((c) => [c.category, c.subcategory, c.product, c.base_price])
-    );
+  const getUserCSV = () => buildCsvTable('users', output, includePersona);
+  const getTrxCSV = () => buildCsvTable('transactions', output, includePersona);
+  const getItemCSV = () => buildCsvTable('transaction_items', output, includePersona);
+  const getFunnelCSV = () => buildCsvTable('funnel', output, includePersona);
+  const getCatalogCSV = () => buildCsvTable('catalog', output, includePersona);
 
   const triggerDownload = (filename: string, content: string, mime: string) => {
     const blob = new Blob([content], { type: mime });
@@ -250,15 +217,31 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className={`border ${theme.borderClass} ${theme.cardClass} w-full max-w-xl shadow-2xl overflow-hidden flex flex-col`}>
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-modal-title"
+    >
+      <div
+        className={`border ${theme.borderClass} ${theme.cardClass} w-full max-w-xl shadow-2xl overflow-hidden flex flex-col`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className={`px-6 py-4 border-b ${theme.borderClass} flex items-center justify-between`}>
           <div className="flex items-center gap-2">
             <Archive className="w-4 h-4 opacity-80" />
-            <h2 className="font-bold text-sm uppercase tracking-wide">Export Dataset Packages</h2>
+            <h2 id="export-modal-title" className="font-bold text-sm uppercase tracking-wide">
+              Export Dataset Packages
+            </h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded opacity-60 hover:opacity-100 transition">
+          <button
+            ref={closeButtonRef}
+            onClick={onClose}
+            aria-label="Close export modal"
+            className="p-1 rounded opacity-60 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 transition"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

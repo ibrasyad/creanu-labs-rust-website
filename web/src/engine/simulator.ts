@@ -20,6 +20,17 @@ function mulberry32(seed: number) {
   };
 }
 
+// Deterministic per-date seed derivation over `${baseSeed}:${dateStr}` (FNV-1a 32-bit)
+function seedForDate(baseSeed: number, dateStr: string): number {
+  const payload = `${baseSeed}:${dateStr}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < payload.length; i++) {
+    hash ^= payload.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
 function sampleTriangular(min: number, max: number, mode: number, rand: () => number): number {
   const f = (mode - min) / (max - min);
   const u = rand();
@@ -225,7 +236,8 @@ function getEventMultiplier(
   if (!eventsCfg || typeof eventsCfg !== 'object') return 1.0;
   let mult = 1.0;
 
-  for (const event of Object.values<any>(eventsCfg)) {
+  const sortedEvents = Object.entries<any>(eventsCfg).sort(([a], [b]) => a.localeCompare(b));
+  for (const [, event] of sortedEvents) {
     if (!isCampaignActive(event, simYear, currentMonth, dateStr)) continue;
 
     let target = event.personas?.[personaName]?.[metric];
@@ -320,7 +332,9 @@ export function runSimulationClient(
   const defaultGenders = [['Female', 0.6], ['Male', 0.4]] as [string, number][];
   const defaultChannels = [['Organic Search', 0.35], ['Social Media', 0.3], ['Referral', 0.2], ['Direct', 0.15]] as [string, number][];
 
-  for (const [personaName, personaCfg] of Object.entries<any>(cfg.personas || {})) {
+  const sortedPersonas = Object.entries<any>(cfg.personas || {}).sort(([a], [b]) => a.localeCompare(b));
+
+  for (const [personaName, personaCfg] of sortedPersonas) {
     const baseCount = Math.max(0, Number(personaCfg?.base_user ?? 10));
     const personaCities = toWeightedPairs(personaCfg?.city, defaultCities);
     const personaGenders = toWeightedPairs(personaCfg?.gender, defaultGenders);
@@ -357,7 +371,7 @@ export function runSimulationClient(
 
   while (current <= endDate) {
     const dateStr = current.toISOString().slice(0, 10);
-    const dateSeed = (baseSeed + dayIdx * 7919) >>> 0;
+    const dateSeed = seedForDate(baseSeed, dateStr);
     const dayRng = mulberry32(dateSeed);
 
     const weekday = current.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toLowerCase();
@@ -372,9 +386,9 @@ export function runSimulationClient(
     const monthlyNoiseCfg = cfg.date?.transaction_volume?.monthly_rate_noise;
     const monthlyVolumeMultiplier = applyNoise(monthlyRate, monthlyNoiseCfg, dayRng);
 
-    // A. Daily new user acquisition with growth and event multipliers
+    // A. Daily new user acquisition with growth and event multipliers (sorted persona order)
     let newUsersToday = 0;
-    for (const [personaName, personaCfg] of Object.entries<any>(cfg.personas || {})) {
+    for (const [personaName, personaCfg] of sortedPersonas) {
       const profile = personaCfg.profile || 'balanced';
       let chance = isWeekend
         ? (personaCfg.daily_new_user_chance_weekend ?? personaCfg.daily_new_user_chance ?? 0.1)

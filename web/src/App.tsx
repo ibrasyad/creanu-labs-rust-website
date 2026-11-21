@@ -13,9 +13,29 @@ import { EngineKind, WorkerProgressPhase } from './engine/workerProtocol';
 import { SimulationOutput } from './types/simulation';
 import { ThemeMode, SWISS_THEMES } from './types/theme';
 import { buildShareUrl, hydrateScenarioFromUrl } from './utils/shareUrl';
+import { validateSimulationConfig } from './utils/configValidation';
 import { SITE_CONTENT } from './content/siteContent';
 import { Sparkles, BarChart2, AlertCircle, X } from 'lucide-react';
 import * as yaml from 'js-yaml';
+
+const THEME_STORAGE_KEY = 'grocerylab-theme';
+
+function loadInitialTheme(): ThemeMode {
+  try {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage?.getItem(THEME_STORAGE_KEY);
+      if (saved === 'light' || saved === 'dark') {
+        return saved;
+      }
+      if (window.matchMedia?.('(prefers-color-scheme: dark)')?.matches) {
+        return 'dark';
+      }
+    }
+  } catch {
+    // Ignore storage access errors in sandboxed frames
+  }
+  return 'light';
+}
 
 function extractDateBounds(yamlStr: string): { startDate: string; endDate: string; totalDays: number } {
   try {
@@ -46,7 +66,7 @@ function buildBaselineYamlForWindow(startDate: string, endDate: string): string 
 export function App() {
   const initialScenario = useMemo(() => hydrateScenarioFromUrl(), []);
 
-  const [themeMode, setThemeMode] = useState<ThemeMode>('light');
+  const [themeMode, setThemeMode] = useState<ThemeMode>(loadInitialTheme);
   const [activeTab, setActiveTab] = useState<'studio' | 'dashboard' | 'yaml' | 'about'>('studio');
 
   const [currentPresetId, setCurrentPresetId] = useState<string>(initialScenario.presetId);
@@ -75,6 +95,13 @@ export function App() {
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.classList.toggle('dark', themeMode === 'dark');
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage?.setItem(THEME_STORAGE_KEY, themeMode);
+      }
+    } catch {
+      // Ignore storage access errors in restricted environments
     }
   }, [themeMode]);
 
@@ -153,13 +180,19 @@ export function App() {
     setProgress(null);
   };
 
-  // Run Simulation Handler (async worker + Wasm/TS fallback + baseline cache check)
+  // Run Simulation Handler (pre-run validation + async worker + Wasm/TS fallback + baseline cache)
   const handleRunSimulation = async () => {
+    const validation = validateSimulationConfig(configYaml);
+    if (!validation.valid) {
+      setSimError(validation.errors.join(' '));
+      return;
+    }
+
     if (runningTaskRef.current) {
       runningTaskRef.current.cancel();
     }
 
-    const { startDate, endDate, totalDays } = extractDateBounds(configYaml);
+    const { startDate, endDate, totalDays } = validation;
     const cacheKey = `${startDate}|${endDate}`;
     const cachedBaseline = baselineCacheRef.current.get(cacheKey);
     const baselineYaml = cachedBaseline ? null : buildBaselineYamlForWindow(startDate, endDate);

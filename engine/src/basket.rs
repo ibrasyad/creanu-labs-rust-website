@@ -46,10 +46,16 @@ fn pick_candidate<R: Rng>(
     rng: &mut R,
 ) -> Option<Candidate> {
     let catalog = &config.catalog;
-    let categories = &persona_cfg.category_weight;
-    if categories.is_empty() {
+    if catalog.is_empty() {
         return None;
     }
+    let fallback_categories: HashMap<String, f64>;
+    let categories = if persona_cfg.category_weight.is_empty() {
+        fallback_categories = catalog.keys().map(|k| (k.clone(), 1.0)).collect();
+        &fallback_categories
+    } else {
+        &persona_cfg.category_weight
+    };
 
     // Try up to 100 times matching Python _candidate()
     for _ in 0..100 {
@@ -274,6 +280,40 @@ personas:
         let d = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
         let items = generate_basket(&cfg, "family", persona_cfg, "usr-000001", d, "2026-01-01 10:00:00", "trx-1", &mut history, &mut rng);
         assert_eq!(items.len(), 1);
+    }
+
+    #[test]
+    fn empty_category_weight_falls_back_to_catalog_categories() {
+        let yaml = r#"
+simulation:
+  random_seed: 7
+date:
+  start_date: "2026-01-01"
+  end_date: "2026-01-02"
+  transaction_volume: {}
+catalog:
+  fruits:
+    berries:
+      cooldown: 0
+      product:
+        strawberry:
+          base_price: 25000
+funnel: {}
+personas:
+  random_buyer:
+    base_user: 1
+    basket:
+      min_items: 1
+      max_items: 1
+"#;
+        let cfg = FullSimulationConfig::from_yaml(yaml).unwrap();
+        let persona_cfg = cfg.personas.get("random_buyer").unwrap();
+        let mut history = PurchaseHistory::new();
+        let mut rng = ChaCha8Rng::seed_from_u64(7);
+        let d = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let items = generate_basket(&cfg, "random_buyer", persona_cfg, "usr-000001", d, "2026-01-01 12:00:00", "trx-2", &mut history, &mut rng);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].product, "strawberry");
     }
 }
 

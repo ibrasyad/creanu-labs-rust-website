@@ -1,4 +1,4 @@
-# Rust for Pythonistas: Creanu Labs Guide
+# Rust for Pythonistas: GroceryLab Guide
 
 Welcome to Rust! If you come from Python, Rust might look intimidating with its type signatures and compiler checks. But here is the secret: **Rust and Python share many high-level ideas**. Once you understand how Python idioms translate into Rust, you will find Rust code readable, elegant, and blazingly fast.
 

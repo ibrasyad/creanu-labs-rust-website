@@ -1,5 +1,5 @@
 {
-  "name": "Creanu Labs — Synthetic Grocery Analytics Simulator",
+  "name": "GroceryLab — Synthetic Grocery Analytics Simulator",
   "description": "Client-side synthetic retail and grocery analytics simulator with configurable YAML scenarios, 90-day baseline comparisons, and CSV/JSON export.",
   "requestFramePermissions": []
 }

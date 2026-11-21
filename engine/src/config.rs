@@ -253,7 +253,7 @@ pub struct PersonaConfig {
     pub base_user: usize,
     #[serde(default = "default_retry")]
     pub daily_retry: u32,
-    #[serde(default)]
+    #[serde(default = "default_new_user_chance")]
     pub daily_new_user_chance: f64,
     #[serde(default)]
     pub daily_new_user_chance_weekend: f64,
@@ -280,6 +280,7 @@ pub struct PersonaConfig {
 fn default_profile() -> String { "balanced".to_string() }
 fn default_base_user() -> usize { 10 }
 fn default_retry() -> u32 { 3 }
+fn default_new_user_chance() -> f64 { 0.1 }
 
 // ============================================================================
 // GROWTH & EVENT CONFIGS

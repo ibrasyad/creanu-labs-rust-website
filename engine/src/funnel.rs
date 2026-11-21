@@ -12,8 +12,10 @@ pub fn get_visit_decay_multiplier(days_since_active: i64, rules: &[crate::config
     if rules.is_empty() {
         return 1.0;
     }
-    let mut multiplier = rules[0].multiplier;
-    for rule in rules {
+    let mut sorted: Vec<&crate::config::VisitDecayRule> = rules.iter().collect();
+    sorted.sort_by_key(|r| r.days);
+    let mut multiplier = sorted[0].multiplier;
+    for rule in sorted {
         if days_since_active >= rule.days {
             multiplier = rule.multiplier;
         } else {
@@ -41,10 +43,6 @@ pub fn rolls_landing_page<R: Rng>(
     let month_mult = persona_cfg.monthly_visit_chance_multiplier.get(&month).copied().unwrap_or(1.0);
     chance *= month_mult;
     chance *= visit_multiplier;
-
-    // Apply funnel noise if configured (persona override -> global funnel fallback)
-    let noise_cfg = persona_cfg.funnel_noise.as_ref().or(config.funnel.funnel_noise.as_ref());
-    chance = apply_noise(chance, noise_cfg, rng);
     chance *= decay;
 
     if decay <= 0.0 {
@@ -189,4 +187,23 @@ pub fn simulate_user_journey<R: Rng>(
     }
 
     (events, reached_paid, paid_datetime)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::VisitDecayRule;
+
+    #[test]
+    fn visit_decay_handles_unsorted_rules_deterministically() {
+        let unsorted = vec![
+            VisitDecayRule { days: 30, multiplier: 0.2 },
+            VisitDecayRule { days: 0, multiplier: 1.0 },
+            VisitDecayRule { days: 7, multiplier: 0.6 },
+        ];
+        assert!((get_visit_decay_multiplier(0, &unsorted) - 1.0).abs() < 1e-9);
+        assert!((get_visit_decay_multiplier(6, &unsorted) - 1.0).abs() < 1e-9);
+        assert!((get_visit_decay_multiplier(7, &unsorted) - 0.6).abs() < 1e-9);
+        assert!((get_visit_decay_multiplier(45, &unsorted) - 0.2).abs() < 1e-9);
+    }
 }

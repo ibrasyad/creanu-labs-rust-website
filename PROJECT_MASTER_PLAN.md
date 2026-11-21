@@ -1,6 +1,6 @@
-# Creanu Labs: Web Platform & Rust Engine Master Plan
+# GroceryLab: Web Platform & Rust Engine Master Plan
 
-> **Goal:** Transform Creanu Labs (`lettuce-melon`) from a local Python script into a high-performance, browser-executable web application hosted on Cloudflare Workers, capable of generating, analyzing, and downloading realistic synthetic retail datasets in seconds.
+> **Goal:** Transform GroceryLab (`lettuce-melon`) from a local Python script into a high-performance, browser-executable web application hosted on Cloudflare Workers, capable of generating, analyzing, and downloading realistic synthetic retail datasets in seconds.
 
 ---
 
@@ -99,7 +99,7 @@ The web dashboard will show **two sets of numbers**:
 
 ## 3. Project Management & Linear Tracker
 
-**Linear Project:** [Creanu Labs - Web Platform & Rust Engine](https://linear.app/ibnulab/project/creanu-labs-web-platform-and-rust-engine-9aeb91c0bfc3) (`P-IBN-1`)
+**Linear Project:** [GroceryLab — Web Platform & Rust Engine](https://linear.app/ibnulab/project/creanu-labs-web-platform-and-rust-engine-9aeb91c0bfc3) (`P-IBN-1`)
 
 | Issue ID                                          | Milestone / Task                                                    | Priority | Status  |
 | :------------------------------------------------ | :------------------------------------------------------------------ | :------- | :------ |
@@ -125,9 +125,17 @@ The web dashboard will show **two sets of numbers**:
 ## 4. Technology Stack Summary
 
 - **Simulation Engine:** Rust (`rand`, `serde`, `serde_yaml`, `wasm-bindgen`).
-- **Web Frontend:** React 19 / Vite / Tailwind CSS / TypeScript.
-- **Code Editor:** Monaco Editor (`@monaco-editor/react`).
-- **Charts & Visualization:** Recharts or Chart.js (lightweight, zero latency).
-- **Client Compression:** `JSZip` / FileSaver API.
+- **Web Frontend:** React 19 / Vite 8 / Tailwind CSS v4 / TypeScript 7.
+- **YAML & Data Packaging:** `js-yaml`, `JSZip`, Recharts v3, `lucide-react`.
 - **Hosting & Edge Deployment:** Cloudflare Workers (Static Assets).
-- **Optional Database:** Cloudflare D1 (Serverless SQLite).
+- **Planned (`v1.1.0`):** Cloudflare D1 (Serverless SQLite) for community shared presets & upvotes.
+
+---
+
+## 5. Release Evaluation & Roadmap (`v1.0.0` GA → `v1.1.0`)
+
+- **Current Release (`v1.0.0` GA)**:
+  - Completed all 16 core Linear milestones (`IBN-5` through `IBN-21`), Astro-style decoupled copy (`web/src/content/`), Swiss Light/Dark theme persistence, `ErrorBoundary` + pre-run YAML/schema validation, modal/keyboard accessibility, and privacy-default `persona` omission in CSV exports.
+  - Hardened release quality with Pull Request CI gates, automated CSV/validation tests, Rust/Wasm ↔ TypeScript cross-engine parity verification (`verifyParity.ts`), and unified `GroceryLab` branding (`grocerylab-simulator`).
+  - Final production step: complete the live `sim.ibnulab.com` sign-off checklist in [`DEPLOYMENT.md`](./DEPLOYMENT.md).
+- **Deferred (`v1.1.0`)**: Optional **Cloudflare Workers API + D1** backend for community-shared configs and upvotes.
