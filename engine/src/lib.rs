@@ -297,6 +297,7 @@ mod tests {
             }],
             summary: SimulationSummary {
                 total_users: 1,
+                new_users: 0,
                 total_sessions: 1,
                 total_transactions: 1,
                 total_revenue: 15000.0,
